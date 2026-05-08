@@ -10,6 +10,7 @@ export default function Chat() {
   const [msgs, setMsgs] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -37,6 +38,19 @@ export default function Chat() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [msgs]);
+
+  async function clearChat() {
+    if (clearing) return;
+    setClearing(true);
+    await supabase.from('chat_messages').delete().eq('user_id', userId);
+    setMsgs([{
+      id: 'welcome',
+      role: 'assistant',
+      content: 'Hola! Soy Lex, tu tutora de ingles. En que te ayudo hoy?',
+      created_at: new Date().toISOString(),
+    }]);
+    setClearing(false);
+  }
 
   async function handleSend(e) {
     e?.preventDefault();
@@ -98,7 +112,7 @@ export default function Chat() {
           alignItems: "center", justifyContent: "center",
           color: "#111318", fontSize: 13, fontWeight: 800,
         }}>L</div>
-        <div>
+        <div style={{ flex: 1 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: C.textPrimary }}>Lex</div>
           <div style={{
             fontSize: 11, color: C.teal, display: "flex",
@@ -110,6 +124,15 @@ export default function Chat() {
             En linea
           </div>
         </div>
+        <button onClick={clearChat} disabled={clearing} style={{
+          background: "none", border: "none", cursor: clearing ? "default" : "pointer",
+          color: C.textMuted, padding: 4, borderRadius: 6,
+          opacity: clearing ? 0.4 : 1,
+        }} title="Borrar conversacion">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </button>
       </div>
 
       {/* Messages */}
