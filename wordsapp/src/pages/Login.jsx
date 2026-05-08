@@ -1,23 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { C } from '../lib/tokens';
 
 export default function Login() {
-  const { signIn, signUp } = useAuth();
+  const { user, signIn, signUp } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) navigate('/', { replace: true });
+  }, [user, navigate]);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
     try {
-      if (isSignUp) await signUp(email, password, name.trim() || email.split('@')[0]);
-      else await signIn(email, password);
+      if (isSignUp) {
+        const { user: newUser } = await signUp(email, password, name.trim() || email.split('@')[0]);
+        if (!newUser?.identities?.length) {
+          setSuccess('Cuenta creada. Revisa tu email para confirmarla antes de iniciar sesion.');
+        }
+      } else await signIn(email, password);
     } catch (err) { setError(err.message); }
     setLoading(false);
   }
@@ -90,6 +102,15 @@ export default function Login() {
             />
           </div>
 
+          {success ? (
+            <div style={{
+              fontSize: 13, padding: "10px 12px", borderRadius: 8,
+              background: C.greenBg, color: C.green,
+              border: `1px solid ${C.green}33`, lineHeight: 1.5,
+            }}>
+              {success}
+            </div>
+          ) : null}
           {error ? (
             <div style={{
               fontSize: 13, padding: "10px 12px", borderRadius: 8,
