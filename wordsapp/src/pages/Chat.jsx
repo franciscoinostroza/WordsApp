@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { sendMessage } from '../lib/claude';
+import { renderMarkdown } from '../lib/markdown';
 import { C } from '../lib/tokens';
 
 export default function Chat() {
@@ -146,7 +147,7 @@ export default function Chat() {
                 whiteSpace: "pre-wrap",
                 wordBreak: "break-word",
               }}>
-                {m.content}
+                {isUser ? m.content : <span dangerouslySetInnerHTML={{ __html: renderMarkdown(m.content) }} />}
               </div>
             </div>
           );
