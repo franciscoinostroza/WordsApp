@@ -4,7 +4,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch('https://opencode.ai/zen/v1/chat/completions', {
+    const response = await fetch('https://opencode.ai/zen/go/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
