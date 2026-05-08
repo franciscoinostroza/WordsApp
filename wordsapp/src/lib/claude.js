@@ -1,6 +1,6 @@
 const API_KEY = import.meta.env.VITE_AI_API_KEY;
 const API_URL = '/api/chat';
-const MODEL = 'minimax-m2.5-free';
+const MODEL = 'deepseek-v4-pro';
 
 const SYSTEM_PROMPT = `Eres una tutora de ingles amigable y experta, especializada en estudiantes de nivel B1-B2 de habla hispana. 
 Tu nombre es Lex.
