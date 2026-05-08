@@ -1,5 +1,5 @@
 const API_KEY = import.meta.env.VITE_AI_API_KEY;
-const API_URL = 'https://opencode.ai/zen/go/v1/chat/completions';
+const API_URL = '/api/chat';
 const MODEL = 'qwen3.5-plus';
 
 const SYSTEM_PROMPT = `Eres una tutora de ingles amigable y experta, especializada en estudiantes de nivel B1-B2 de habla hispana. 
