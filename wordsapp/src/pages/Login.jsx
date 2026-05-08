@@ -25,8 +25,8 @@ export default function Login() {
     setLoading(true);
     try {
       if (isSignUp) {
-        const { user: newUser } = await signUp(email, password, name.trim() || email.split('@')[0]);
-        if (!newUser?.identities?.length) {
+        const { user: newUser, session } = await signUp(email, password, name.trim() || email.split('@')[0]);
+        if (!session) {
           setSuccess('Cuenta creada. Revisa tu email para confirmarla antes de iniciar sesion.');
         }
       } else await signIn(email, password);
