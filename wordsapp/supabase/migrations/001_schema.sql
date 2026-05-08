@@ -122,31 +122,40 @@ ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE progress_stats ENABLE ROW LEVEL SECURITY;
 
 -- Users can read/update their own row
-CREATE POLICY IF NOT EXISTS "Users read own" ON users FOR SELECT USING (auth.uid() = id);
-CREATE POLICY IF NOT EXISTS "Users update own" ON users FOR UPDATE USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Users read own" ON users;
+CREATE POLICY "Users read own" ON users FOR SELECT USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Users update own" ON users;
+CREATE POLICY "Users update own" ON users FOR UPDATE USING (auth.uid() = id);
 
 -- Decks policies
-CREATE POLICY IF NOT EXISTS "Decks CRUD own" ON decks
+DROP POLICY IF EXISTS "Decks CRUD own" ON decks;
+CREATE POLICY "Decks CRUD own" ON decks
   FOR ALL USING (auth.uid() = user_id);
 
 -- Flashcards policies
-CREATE POLICY IF NOT EXISTS "Flashcards CRUD own" ON flashcards
+DROP POLICY IF EXISTS "Flashcards CRUD own" ON flashcards;
+CREATE POLICY "Flashcards CRUD own" ON flashcards
   FOR ALL USING (auth.uid() = user_id);
 
 -- Reviews policies
-CREATE POLICY IF NOT EXISTS "Reviews CRUD own" ON reviews
+DROP POLICY IF EXISTS "Reviews CRUD own" ON reviews;
+CREATE POLICY "Reviews CRUD own" ON reviews
   FOR ALL USING (auth.uid() = user_id);
 
 -- Quiz sessions policies
-CREATE POLICY IF NOT EXISTS "Quiz sessions read own" ON quiz_sessions
+DROP POLICY IF EXISTS "Quiz sessions read own" ON quiz_sessions;
+CREATE POLICY "Quiz sessions read own" ON quiz_sessions
   FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Quiz sessions insert own" ON quiz_sessions
+DROP POLICY IF EXISTS "Quiz sessions insert own" ON quiz_sessions;
+CREATE POLICY "Quiz sessions insert own" ON quiz_sessions
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- Chat messages policies
-CREATE POLICY IF NOT EXISTS "Chat messages CRUD own" ON chat_messages
+DROP POLICY IF EXISTS "Chat messages CRUD own" ON chat_messages;
+CREATE POLICY "Chat messages CRUD own" ON chat_messages
   FOR ALL USING (auth.uid() = user_id);
 
 -- Progress stats policies
-CREATE POLICY IF NOT EXISTS "Progress stats CRUD own" ON progress_stats
+DROP POLICY IF EXISTS "Progress stats CRUD own" ON progress_stats;
+CREATE POLICY "Progress stats CRUD own" ON progress_stats
   FOR ALL USING (auth.uid() = user_id);
