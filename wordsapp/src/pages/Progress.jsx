@@ -89,10 +89,10 @@ export default function Progress() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <StatCard icon="\uD83D\uDCD6" label="Palabras" value={String(stats.total)} color={C.gold} bg={C.goldBg} border={C.goldBorder} />
-        <StatCard icon="\u26A1" label="Racha" value={`${stats.streak} dias`} color={C.gold} bg={C.goldBg} border={C.goldBorder} />
-        <StatCard icon="\uD83D\uDCC5" label="Quizzes" value={String(stats.sessions)} color={C.teal} bg={C.tealBg} border={C.tealBorder} />
-        <StatCard icon="\uD83C\uDFAF" label="Promedio" value={`${stats.avgScore}%`} color={C.purple} bg={C.purpleBg} border={`${C.purple}33`} />
+        <StatCard icon="📖" label="Palabras" value={String(stats.total)} color={C.gold} bg={C.goldBg} border={C.goldBorder} />
+        <StatCard icon="⚡" label="Racha" value={`${stats.streak} dias`} color={C.gold} bg={C.goldBg} border={C.goldBorder} />
+        <StatCard icon="📅" label="Quizzes" value={String(stats.sessions)} color={C.teal} bg={C.tealBg} border={C.tealBorder} />
+        <StatCard icon="🎯" label="Promedio" value={`${stats.avgScore}%`} color={C.purple} bg={C.purpleBg} border={`${C.purple}33`} />
       </div>
 
       <div style={{
