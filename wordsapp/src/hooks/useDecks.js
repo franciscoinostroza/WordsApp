@@ -72,5 +72,18 @@ export function useDeck(id) {
       })
   }, [userId, id])
 
-  return { deck, loading }
+  const updateDeck = async (updates) => {
+    const { data, error } = await supabase
+      .from('decks')
+      .update(updates)
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select()
+      .single()
+    if (error) throw error
+    setDeck(data)
+    return data
+  }
+
+  return { deck, loading, updateDeck }
 }
