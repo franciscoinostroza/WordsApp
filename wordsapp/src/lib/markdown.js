@@ -7,12 +7,11 @@ export function renderMarkdown(text) {
     .replace(/>/g, '&gt;');
 
   html = html
+    .replace(/^[\*\-]\s+(.+)$/gm, '<li>$1</li>')
+    .replace(/((?:<li>.*<\/li>\s*)+)/g, '<ul>$1</ul>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/^\- (.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-    .replace(/<\/li>\s*<li>/g, '</li><li>')
-    .replace(/\n\n/g, '<br/><br/>');
+    .replace(/\n/g, '<br/>');
 
   return html;
 }
