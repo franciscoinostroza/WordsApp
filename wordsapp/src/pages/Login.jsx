@@ -53,13 +53,7 @@ export default function Login() {
     }}>
       <div style={{ width: "100%", maxWidth: 360 }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{
-            width: 48, height: 48, borderRadius: 12, background: C.gold,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            margin: "0 auto 16px",
-          }}>
-            <span style={{ color: "#111318", fontWeight: 800, fontSize: 18 }}>W</span>
-          </div>
+            <img src="/logo.png" alt="WordsApp" style={{ width: 56, height: 56, margin: "0 auto 16px", display: "block", borderRadius: 12 }} />
           <h1 style={{
             fontSize: 20, fontWeight: 700, letterSpacing: -0.4, color: C.textPrimary,
           }}>WordsApp</h1>

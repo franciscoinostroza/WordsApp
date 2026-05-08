@@ -35,9 +35,7 @@ export default function Layout() {
       }}>
         <div style={{ padding: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28, paddingLeft: 14 }}>
-            <div style={{ width: 34, height: 34, background: C.gold, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ color: "#111318", fontSize: 15, fontWeight: 800 }}>W</span>
-            </div>
+            <img src="/logo.png" alt="WordsApp" style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0 }} />
             <span style={{ fontWeight: 700, fontSize: 16, letterSpacing: -0.4, color: C.textPrimary }}>WordsApp</span>
           </div>
           <nav style={{ display: "flex", flexDirection: "column", gap: 1 }}>
@@ -85,9 +83,7 @@ export default function Layout() {
           justifyContent: "space-between", flexShrink: 0,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 30, height: 30, background: C.gold, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ color: "#111318", fontSize: 13, fontWeight: 800 }}>W</span>
-            </div>
+            <img src="/logo.png" alt="WordsApp" style={{ width: 30, height: 30, borderRadius: 9, flexShrink: 0 }} />
             <span style={{ fontWeight: 700, fontSize: 15, letterSpacing: -0.4 }}>WordsApp</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
