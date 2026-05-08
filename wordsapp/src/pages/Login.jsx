@@ -68,8 +68,37 @@ export default function Login() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div>
+        {success ? (
+          <div style={{
+            background: C.surface, borderRadius: 16, padding: 32, textAlign: "center",
+            border: `1px solid ${C.border}`,
+          }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: "50%", background: C.greenBg,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              margin: "0 auto 16px", border: `2px solid ${C.green}33`,
+            }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="2" strokeLinecap="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: C.textPrimary, marginBottom: 8 }}>
+              Revisa tu email
+            </h2>
+            <p style={{ fontSize: 13, color: C.textMuted, lineHeight: 1.6, marginBottom: 20 }}>
+              Te enviamos un enlace magico a tu correo. Haz clic en el para confirmar tu cuenta y acceder a WordsApp.
+            </p>
+            <button onClick={() => { setSuccess(''); setIsSignUp(false); }} style={{
+              color: C.gold, fontWeight: 600, cursor: "pointer",
+              background: "none", border: "none", fontSize: 13, textDecoration: "underline",
+            }}>
+              Volver al inicio de sesion
+            </button>
+          </div>
+        ) : (
+          <>
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
             <div style={{
               fontSize: 11, fontWeight: 700, color: C.textMuted,
               textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6,
@@ -102,15 +131,6 @@ export default function Login() {
             />
           </div>
 
-          {success ? (
-            <div style={{
-              fontSize: 13, padding: "10px 12px", borderRadius: 8,
-              background: C.greenBg, color: C.green,
-              border: `1px solid ${C.green}33`, lineHeight: 1.5,
-            }}>
-              {success}
-            </div>
-          ) : null}
           {error ? (
             <div style={{
               fontSize: 13, padding: "10px 12px", borderRadius: 8,
@@ -140,6 +160,8 @@ export default function Login() {
             {isSignUp ? 'Inicia sesion' : 'Registrate'}
           </button>
         </p>
+          </>
+        )}
       </div>
     </div>
   );
