@@ -1,8 +1,0 @@
-{
-  "installCommand": "cd wordsapp && npm install",
-  "buildCommand": "cd wordsapp && npm run build",
-  "outputDirectory": "wordsapp/dist",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
