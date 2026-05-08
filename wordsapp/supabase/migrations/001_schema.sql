@@ -130,17 +130,20 @@ CREATE POLICY "Users update own" ON users FOR UPDATE USING (auth.uid() = id);
 -- Decks policies
 DROP POLICY IF EXISTS "Decks CRUD own" ON decks;
 CREATE POLICY "Decks CRUD own" ON decks
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
 -- Flashcards policies
 DROP POLICY IF EXISTS "Flashcards CRUD own" ON flashcards;
 CREATE POLICY "Flashcards CRUD own" ON flashcards
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
 -- Reviews policies
 DROP POLICY IF EXISTS "Reviews CRUD own" ON reviews;
 CREATE POLICY "Reviews CRUD own" ON reviews
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
 -- Quiz sessions policies
 DROP POLICY IF EXISTS "Quiz sessions read own" ON quiz_sessions;
@@ -153,9 +156,11 @@ CREATE POLICY "Quiz sessions insert own" ON quiz_sessions
 -- Chat messages policies
 DROP POLICY IF EXISTS "Chat messages CRUD own" ON chat_messages;
 CREATE POLICY "Chat messages CRUD own" ON chat_messages
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
 -- Progress stats policies
 DROP POLICY IF EXISTS "Progress stats CRUD own" ON progress_stats;
 CREATE POLICY "Progress stats CRUD own" ON progress_stats
-  FOR ALL USING (auth.uid() = user_id);
+  FOR ALL USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
