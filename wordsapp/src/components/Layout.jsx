@@ -14,12 +14,12 @@ const navItems = [
 
 export default function Layout() {
   const { user, userId } = useAuth();
-  const [streak, setStreak] = useState(0);
+  const [profile, setProfile] = useState({ streak: 0, name: '' });
 
   useEffect(() => {
     if (!userId) return;
-    supabase.from('users').select('streak_days').eq('id', userId).single().then(({ data }) => {
-      setStreak(data?.streak_days || 0);
+    supabase.from('users').select('streak_days, name').eq('id', userId).single().then(({ data }) => {
+      setProfile({ streak: data?.streak_days || 0, name: data?.name || '' });
     });
   }, [userId]);
 
@@ -68,9 +68,9 @@ export default function Layout() {
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: C.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {user?.email?.split('@')[0] || 'Usuario'}
+                {profile.name || user?.email?.split('@')[0] || 'Usuario'}
               </div>
-              <div style={{ fontSize: 10, color: C.textMuted }}>{streak} dias de racha</div>
+              <div style={{ fontSize: 10, color: C.textMuted }}>{profile.streak} dias de racha</div>
             </div>
           </div>
         </div>
@@ -96,7 +96,7 @@ export default function Layout() {
               border: `1px solid ${C.gold}33`,
               borderRadius: 6, padding: "2px 8px",
               fontSize: 11, fontWeight: 600,
-            }}>{streak} dias</span>
+            }}>{profile.streak} dias</span>
             <div style={{ width: 30, height: 30, borderRadius: "50%", background: C.gold, display: "flex", alignItems: "center", justifyContent: "center", color: "#111318", fontSize: 12, fontWeight: 800 }}>
               {user?.email?.charAt(0).toUpperCase() || 'U'}
             </div>

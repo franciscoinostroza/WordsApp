@@ -6,6 +6,7 @@ export default function Login() {
   const { signIn, signUp } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,7 +16,7 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      if (isSignUp) await signUp(email, password);
+      if (isSignUp) await signUp(email, password, name.trim() || email.split('@')[0]);
       else await signIn(email, password);
     } catch (err) { setError(err.message); }
     setLoading(false);
@@ -66,6 +67,18 @@ export default function Login() {
               placeholder="tu@email.com" required autoFocus style={inputStyle}
             />
           </div>
+          {isSignUp ? (
+            <div>
+              <div style={{
+                fontSize: 11, fontWeight: 700, color: C.textMuted,
+                textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6,
+              }}>Nombre</div>
+              <input
+                type="text" value={name} onChange={e => setName(e.target.value)}
+                placeholder="Tu nombre" style={inputStyle}
+              />
+            </div>
+          ) : null}
           <div>
             <div style={{
               fontSize: 11, fontWeight: 700, color: C.textMuted,
