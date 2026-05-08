@@ -111,9 +111,9 @@ export default function Layout() {
         </div>
 
         {/* Mobile bottom nav */}
-        <nav className="md:hidden" style={{
+        <nav className="flex md:hidden" style={{
           background: C.surface, borderTop: `1px solid ${C.border}`,
-          display: "flex", flexShrink: 0,
+          flexShrink: 0,
           paddingBottom: "env(safe-area-inset-bottom, 0)",
         }}>
           {navItems.map(({ label, to, icon: Icon }) => (
