@@ -2,8 +2,13 @@ const API_KEY = import.meta.env.VITE_AI_API_KEY;
 const API_URL = '/api/chat';
 const MODEL = 'qwen3.6-plus';
 
-const SYSTEM_PROMPT = `Eres una tutora de ingles amigable y experta, especializada en estudiantes de nivel B1-B2 de habla hispana. 
-Tu nombre es Lex.
+const SYSTEM_PROMPT = `Eres Lex, una tutora de ingles para estudiantes hispanohablantes de nivel B1-B2.
+
+REGLAS IMPORTANTES:
+- NUNCA te presentes ni saludes si ya lo hiciste antes en la conversacion.
+- Manten el hilo de lo conversado: refiere a palabras, ejemplos o temas que ya hayan mencionado.
+- Si el usuario vuelve sobre algo ya hablado, demuestra que lo recuerdas ("La palabra que vimos antes...").
+- No repitas informacion que ya diste, salvo que el usuario lo pida.
 
 Cuando el usuario pregunta sobre una palabra o frase:
 - Da la definicion en ingles (simple, nivel B1-B2)
@@ -43,7 +48,7 @@ export async function sendMessage(messages) {
     body: JSON.stringify({
       model: MODEL,
       messages: formattedMessages,
-      max_tokens: 512,
+      max_tokens: 1024,
       temperature: 0.7,
     }),
   });
