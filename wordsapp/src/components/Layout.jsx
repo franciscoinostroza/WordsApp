@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { C } from '../lib/tokens';
 import { supabase } from '../lib/supabase';
@@ -14,6 +14,8 @@ const navItems = [
 
 export default function Layout() {
   const { user, userId } = useAuth();
+  const location = useLocation();
+  const isChat = location.pathname === '/chat';
   const [profile, setProfile] = useState({ streak: 0, name: '' });
 
   useEffect(() => {
@@ -100,8 +102,8 @@ export default function Layout() {
         </header>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto" style={{ padding: 20 }}>
-          <div className="max-w-[430px] md:max-w-none mx-auto w-full min-h-full flex flex-col">
+        <div className={`flex-1 ${isChat ? 'overflow-hidden' : 'overflow-y-auto'}`} style={{ padding: 20 }}>
+          <div className={`max-w-[430px] md:max-w-none mx-auto w-full flex flex-col ${isChat ? 'h-full' : 'min-h-full'}`}>
             <Outlet />
           </div>
         </div>

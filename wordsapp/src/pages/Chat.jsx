@@ -209,7 +209,8 @@ export default function Chat() {
       <form onSubmit={handleSend} style={{
         display: "flex", gap: 8,
         paddingTop: 10, borderTop: `1px solid ${C.border}`,
-        flexShrink: 0,
+        flexShrink: 0, position: "sticky", bottom: 0,
+        background: C.bg, paddingBottom: 4,
       }}>
         <input
           ref={inputRef}
