@@ -39,7 +39,16 @@ export default function Home() {
     load();
   }, [userId]);
 
-  const name = user?.email?.split('@')[0] || '';
+  const [profileName, setProfileName] = useState('');
+
+  useEffect(() => {
+    if (!userId) return;
+    supabase.from('users').select('name').eq('id', userId).single().then(({ data }) => {
+      setProfileName(data?.name || '');
+    });
+  }, [userId]);
+
+  const name = profileName || user?.user_metadata?.name || user?.email?.split('@')[0] || '';
 
   const cardStyle = {
     background: C.surface, border: `1px solid ${C.border}`,
