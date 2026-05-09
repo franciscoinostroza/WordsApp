@@ -66,7 +66,7 @@ export default function Layout() {
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: C.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {profile.name || user?.email?.split('@')[0] || 'Usuario'}
+                {profile.name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuario'}
               </div>
               <div style={{ fontSize: 10, color: C.textMuted }}>{profile.streak} dias de racha</div>
             </div>
