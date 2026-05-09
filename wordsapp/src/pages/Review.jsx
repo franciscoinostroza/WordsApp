@@ -116,6 +116,12 @@ export default function Review() {
       >
         {!flipped ? (
           <>
+            {card.image_url && (
+              <img src={card.image_url} alt="" style={{
+                width: 120, height: 120, borderRadius: 12, objectFit: "cover",
+                marginBottom: 10, boxShadow: `0 0 0 1px ${C.border}`,
+              }} />
+            )}
             {card.part_of_speech && (
               <Tag>{card.part_of_speech}</Tag>
             )}
@@ -142,6 +148,12 @@ export default function Review() {
             alignItems: "center", gap: 8, width: "100%",
             animation: "fadeIn 0.2s ease-out",
           }}>
+            {card.image_url && (
+              <img src={card.image_url} alt="" style={{
+                width: 120, height: 120, borderRadius: 12, objectFit: "cover",
+                boxShadow: `0 0 0 1px ${C.border}`,
+              }} />
+            )}
             <div style={{
               width: 36, height: 1, background: C.border, margin: "6px 0",
             }} />

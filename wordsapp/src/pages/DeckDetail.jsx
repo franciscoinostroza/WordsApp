@@ -34,6 +34,8 @@ export default function DeckDetail() {
   const [example, setExample] = useState('');
   const [ipa, setIpa] = useState('');
   const [pos, setPos] = useState('');
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
   const [sub, setSub] = useState(false);
   const overlayRef = useRef(null);
 
@@ -52,6 +54,8 @@ export default function DeckDetail() {
   const [editExample, setEditExample] = useState('');
   const [editIpa, setEditIpa] = useState('');
   const [editPos, setEditPos] = useState('');
+  const [editImageFile, setEditImageFile] = useState(null);
+  const [editImagePreview, setEditImagePreview] = useState('');
   const [editSub, setEditSub] = useState(false);
 
   async function handleCreate(e) {
@@ -65,9 +69,10 @@ export default function DeckDetail() {
       example: example.trim() || null,
       ipa: ipa.trim() || null,
       part_of_speech: pos || null,
-    });
+    }, imageFile);
     setWord(''); setTranslation(''); setDefinition('');
     setExample(''); setIpa(''); setPos('');
+    setImageFile(null); setImagePreview('');
     setSub(false); setOpen(false);
   }
 
@@ -99,6 +104,8 @@ export default function DeckDetail() {
     setEditExample(card.example || '');
     setEditIpa(card.ipa || '');
     setEditPos(card.part_of_speech || '');
+    setEditImageFile(null);
+    setEditImagePreview(card.image_url || '');
     setEditSub(false);
   }
 
@@ -106,20 +113,24 @@ export default function DeckDetail() {
     e.preventDefault();
     if (!editWord.trim() || !editTranslation.trim()) return;
     setEditSub(true);
-    await updateFlashcard(editCard.id, {
+    const updates = {
       word: editWord.trim(),
       translation: editTranslation.trim(),
       definition: editDefinition.trim() || null,
       example: editExample.trim() || null,
       ipa: editIpa.trim() || null,
       part_of_speech: editPos || null,
-    });
+    };
+    if (editImagePreview === '' && !editImageFile && editCard.image_url) {
+      updates.removeImage = true;
+    }
+    await updateFlashcard(editCard.id, updates, editImageFile);
     setEditSub(false);
     setEditCard(null);
   }
 
   useEffect(() => {
-    function esc(e) { if (e.key === 'Escape') { setOpen(false); setEditDeckOpen(false); setEditCard(null); } }
+    function esc(e) { if (e.key === 'Escape') { setOpen(false); setImageFile(null); setImagePreview(''); setEditDeckOpen(false); setEditCard(null); } }
     const hasModal = open || editDeckOpen || editCard;
     if (hasModal) { window.addEventListener('keydown', esc); }
     return () => window.removeEventListener('keydown', esc);
@@ -208,14 +219,21 @@ export default function DeckDetail() {
         <p style={{ fontSize: 13, color: C.textMuted, padding: "24px 0", textAlign: "center" }}>Aun no hay tarjetas</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {flashcards.map(c => (
-            <div key={c.id} style={{ background: C.surface, borderRadius: 12, border: `1px solid ${C.border}`, padding: 16 }}>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-                <div>
-                  <div style={{ fontWeight: 600, color: C.textPrimary }}>{c.word}</div>
-                  <div style={{ fontSize: 13, color: C.textMuted, marginTop: 2 }}>{c.translation}</div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+           {flashcards.map(c => (
+             <div key={c.id} style={{ background: C.surface, borderRadius: 12, border: `1px solid ${C.border}`, padding: 16 }}>
+               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                 <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                   {c.image_url && (
+                     <img src={c.image_url} alt="" style={{
+                       width: 48, height: 48, borderRadius: 8, objectFit: "cover", flexShrink: 0,
+                     }} />
+                   )}
+                   <div>
+                     <div style={{ fontWeight: 600, color: C.textPrimary }}>{c.word}</div>
+                     <div style={{ fontSize: 13, color: C.textMuted, marginTop: 2 }}>{c.translation}</div>
+                   </div>
+                 </div>
+                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   {c.part_of_speech && <Tag>{c.part_of_speech}</Tag>}
                   <button onClick={() => openEditCard(c)} style={{
                     background: "none", border: "none", cursor: "pointer",
@@ -276,6 +294,23 @@ export default function DeckDetail() {
                 </select>
               </div>
             </div>
+            <div>
+              <div style={labelStyle}>Imagen</div>
+              {imagePreview && (
+                <div style={{ position: "relative", width: 80, height: 80, marginBottom: 8 }}>
+                  <img src={imagePreview} alt="" style={{ width: 80, height: 80, borderRadius: 8, objectFit: "cover" }} />
+                  <button type="button" onClick={() => { setImageFile(null); setImagePreview(''); }} style={{
+                    position: "absolute", top: -6, right: -6, width: 20, height: 20,
+                    background: C.red, color: "#fff", border: "none", borderRadius: "50%",
+                    fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>&times;</button>
+                </div>
+              )}
+              <input type="file" accept="image/*" onChange={e => {
+                const f = e.target.files[0];
+                if (f) { setImageFile(f); setImagePreview(URL.createObjectURL(f)); }
+              }} style={inputStyle} />
+            </div>
             <SubmitButton loading={sub} disabled={!word.trim() || !translation.trim()} label="Guardar" />
           </form>
         </Modal>
@@ -327,6 +362,23 @@ export default function DeckDetail() {
                   {PARTS.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
+            </div>
+            <div>
+              <div style={labelStyle}>Imagen</div>
+              {editImagePreview && (
+                <div style={{ position: "relative", width: 80, height: 80, marginBottom: 8 }}>
+                  <img src={editImagePreview} alt="" style={{ width: 80, height: 80, borderRadius: 8, objectFit: "cover" }} />
+                  <button type="button" onClick={() => { setEditImageFile(null); setEditImagePreview(''); }} style={{
+                    position: "absolute", top: -6, right: -6, width: 20, height: 20,
+                    background: C.red, color: "#fff", border: "none", borderRadius: "50%",
+                    fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>&times;</button>
+                </div>
+              )}
+              <input type="file" accept="image/*" onChange={e => {
+                const f = e.target.files[0];
+                if (f) { setEditImageFile(f); setEditImagePreview(URL.createObjectURL(f)); }
+              }} style={inputStyle} />
             </div>
             <SubmitButton loading={editSub} disabled={!editWord.trim() || !editTranslation.trim()} label="Guardar cambios" />
           </form>

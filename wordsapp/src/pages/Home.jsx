@@ -86,6 +86,12 @@ export default function Home() {
         }}>
           {wordOfDay ? wordOfDay.word : 'Serendipity'}
         </div>
+        {wordOfDay?.image_url && (
+          <img src={wordOfDay.image_url} alt="" style={{
+            width: 100, height: 100, borderRadius: 10, objectFit: "cover",
+            marginTop: 10, boxShadow: `0 0 0 1px ${C.border}`,
+          }} />
+        )}
         <div style={{
           fontFamily: "'SF Mono', 'Fira Code', monospace",
           fontSize: 12, color: C.textMuted, marginTop: 6,

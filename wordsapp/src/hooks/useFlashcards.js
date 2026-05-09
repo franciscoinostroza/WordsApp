@@ -2,6 +2,31 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
 
+const BUCKET = 'images'
+
+function extractPath(url) {
+  if (!url) return null
+  const idx = url.indexOf(`/public/${BUCKET}/`)
+  if (idx === -1) return null
+  return url.slice(idx + `/public/${BUCKET}/`.length)
+}
+
+async function uploadImage(userId, file) {
+  const ext = file.name.split('.').pop()
+  const filename = `${crypto.randomUUID()}.${ext}`
+  const path = `${userId}/${filename}`
+  const { error } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false })
+  if (error) throw error
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
+  return data.publicUrl
+}
+
+async function deleteImage(url) {
+  const path = extractPath(url)
+  if (!path) return
+  await supabase.storage.from(BUCKET).remove([path])
+}
+
 export function useFlashcards(deckId) {
   const { userId } = useAuth()
   const [flashcards, setFlashcards] = useState([])
@@ -22,10 +47,15 @@ export function useFlashcards(deckId) {
 
   useEffect(() => { fetchFlashcards() }, [fetchFlashcards]) // eslint-disable-line react-hooks/set-state-in-effect
 
-  const createFlashcard = async (card) => {
+  const createFlashcard = async (card, imageFile) => {
+    let image_url = null
+    if (imageFile) {
+      image_url = await uploadImage(userId, imageFile)
+    }
+
     const { data, error } = await supabase
       .from('flashcards')
-      .insert({ ...card, deck_id: deckId, user_id: userId })
+      .insert({ ...card, image_url, deck_id: deckId, user_id: userId })
       .select()
       .single()
     if (error) throw error
@@ -44,12 +74,27 @@ export function useFlashcards(deckId) {
   }
 
   const deleteFlashcard = async (id) => {
+    const card = flashcards.find((f) => f.id === id)
     const { error } = await supabase.from('flashcards').delete().eq('id', id)
     if (error) throw error
+    if (card?.image_url) await deleteImage(card.image_url).catch(() => {})
     setFlashcards((prev) => prev.filter((f) => f.id !== id))
   }
 
-  const updateFlashcard = async (id, updates) => {
+  const updateFlashcard = async (id, updates, imageFile) => {
+    const prevCard = flashcards.find((f) => f.id === id)
+
+    if (imageFile || updates.removeImage) {
+      if (prevCard?.image_url) await deleteImage(prevCard.image_url).catch(() => {})
+      updates.image_url = null
+    }
+
+    if (imageFile) {
+      updates.image_url = await uploadImage(userId, imageFile)
+    }
+
+    delete updates.removeImage
+
     const { data, error } = await supabase
       .from('flashcards')
       .update(updates)
