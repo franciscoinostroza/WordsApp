@@ -1,0 +1,8 @@
+{
+  "name": "wordsapp-root",
+  "private": true,
+  "scripts": {
+    "build": "cd wordsapp && npm install && npm run build",
+    "dev": "cd wordsapp && npm run dev"
+  }
+}

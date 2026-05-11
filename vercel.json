@@ -1,0 +1,6 @@
+{
+  "outputDirectory": "wordsapp/dist",
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
+}
