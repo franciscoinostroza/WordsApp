@@ -3,6 +3,12 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { C } from '../lib/tokens';
 
+const WEEKLY_CHALLENGES = [
+  { label: 'Repasar 30 tarjetas', target: 30, key: 'reviews', icon: '📚' },
+  { label: 'Completar 5 quizzes', target: 5, key: 'quizzes', icon: '🎯' },
+  { label: 'Practicar 3 dias seguidos', target: 3, key: 'streak', icon: '🔥' },
+];
+
 export default function Progress() {
   const { userId } = useAuth();
   const [stats, setStats] = useState({
@@ -11,6 +17,9 @@ export default function Progress() {
   });
   const [difficult, setDifficult] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [weeklyProgress, setWeeklyProgress] = useState({
+    reviews: 0, quizzes: 0, streak: 0,
+  });
 
   const days = ["L", "M", "X", "J", "V", "S", "D"];
 
@@ -24,13 +33,14 @@ export default function Progress() {
       const todayStr = now.toISOString().split('T')[0];
       const mondayStr = monday.toISOString().split('T')[0];
 
-      const [cardsRes, userRes, quizRes, reviewsRes, dueRes, difficultRes] = await Promise.all([
+      const [cardsRes, userRes, quizRes, reviewsRes, dueRes, difficultRes, quizWeekRes] = await Promise.all([
         supabase.from('flashcards').select('id', { count: 'exact' }).eq('user_id', userId),
         supabase.from('users').select('streak_days').eq('id', userId).single(),
         supabase.from('quiz_sessions').select('score,total,completed_at').eq('user_id', userId).order('completed_at', { ascending: false }).limit(10),
         supabase.from('reviews').select('due_date,interval,repetitions,ease_factor').eq('user_id', userId).gte('due_date', mondayStr).lte('due_date', todayStr),
         supabase.from('reviews').select('due_date').eq('user_id', userId).lte('due_date', todayStr),
         supabase.from('reviews').select('*, flashcards(word)').eq('user_id', userId).lt('ease_factor', 2.0).order('ease_factor', { ascending: true }).limit(3),
+        supabase.from('quiz_sessions').select('id').eq('user_id', userId).gte('completed_at', mondayStr),
       ]);
 
       const quizzes = quizRes.data || [];
@@ -54,9 +64,11 @@ export default function Progress() {
         dueCounts[r.due_date] = (dueCounts[r.due_date] || 0) + 1;
       });
 
+      const userStreak = userRes.data?.streak_days || 0;
+
       setStats({
         total: cardsRes.count || 0,
-        streak: userRes.data?.streak_days || 0,
+        streak: userStreak,
         sessions: quizzes.length,
         avgScore,
         weekData: Object.entries(weekCounts).map(([, c]) => c),
@@ -67,6 +79,11 @@ export default function Progress() {
         id: r.id,
         ef: r.ease_factor,
       })));
+      setWeeklyProgress({
+        reviews: reviewData.length,
+        quizzes: (quizWeekRes.data || []).length,
+        streak: userStreak,
+      });
       setLoading(false);
     }
     load();
@@ -93,6 +110,44 @@ export default function Progress() {
         <StatCard icon="⚡" label="Racha" value={`${stats.streak} dias`} color={C.gold} bg={C.goldBg} border={C.goldBorder} />
         <StatCard icon="📅" label="Quizzes" value={String(stats.sessions)} color={C.teal} bg={C.tealBg} border={C.tealBorder} />
         <StatCard icon="🎯" label="Promedio" value={`${stats.avgScore}%`} color={C.purple} bg={C.purpleBg} border={`${C.purple}33`} />
+      </div>
+
+      <div style={{
+        background: C.surface, borderRadius: 14, padding: 16,
+        border: `1px solid ${C.border}`,
+      }}>
+        <div style={{
+          fontSize: 12, fontWeight: 700, color: C.textSecondary,
+          letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 14,
+        }}>Desafios de la semana</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {WEEKLY_CHALLENGES.map((challenge) => {
+            const progress = weeklyProgress[challenge.key] || 0;
+            const pct = Math.min(Math.round((progress / challenge.target) * 100), 100);
+            return (
+              <div key={challenge.key}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, color: C.textPrimary }}>
+                    {challenge.icon} {challenge.label}
+                  </span>
+                  <span style={{ fontSize: 11, color: pct >= 100 ? C.green : C.textMuted, fontWeight: 600 }}>
+                    {progress}/{challenge.target}
+                  </span>
+                </div>
+                <div style={{ height: 5, background: C.bg, borderRadius: 3, overflow: "hidden" }}>
+                  <div style={{
+                    height: "100%", borderRadius: 3,
+                    background: pct >= 100
+                      ? `linear-gradient(90deg, ${C.green}, ${C.green}cc)`
+                      : `linear-gradient(90deg, ${C.gold}, ${C.gold}cc)`,
+                    width: `${pct}%`,
+                    transition: "width 0.5s ease",
+                  }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div style={{

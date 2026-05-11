@@ -1,26 +1,87 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useReviews } from '../hooks/useReviews';
 import { C, Tag } from '../lib/tokens';
 import { speak } from '../lib/speech';
+import { updateStreak, updateProgressStats } from '../lib/activity';
+import { useAuth } from '../hooks/useAuth';
 
 export default function Review() {
   const { deckId } = useParams();
+  const { userId } = useAuth();
   const { cards, loading, rateCard } = useReviews(deckId || null);
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [done, setDone] = useState(false);
   const [animating, setAnimating] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [audioUrl, setAudioUrl] = useState(null);
+  const [interleave, setInterleave] = useState(false);
+  const reviewedCount = useRef(0);
+  const mediaRecorder = useRef(null);
+  const audioChunks = useRef([]);
+  const audioRef = useRef(null);
 
-  const current = cards[index];
+  const current = interleave && cards.length > 0 ? cards[index] : cards[index];
 
   async function handleRate(quality) {
     if (!current || animating) return;
     setAnimating(true);
+    setAudioUrl(null);
     await rateCard(current, quality);
-    if (index + 1 >= cards.length) setDone(true);
-    else { setIndex(index + 1); setFlipped(false); }
+    reviewedCount.current += 1;
+
+    updateProgressStats(userId, { wordsStudied: 1 }).catch(() => {});
+
+    if (index + 1 >= cards.length) {
+      setDone(true);
+      await updateStreak(userId);
+      await updateProgressStats(userId, {
+        wordsStudied: reviewedCount.current,
+        minutesStudied: Math.ceil(reviewedCount.current * 0.3),
+      });
+    } else {
+      setIndex(index + 1);
+      setFlipped(false);
+    }
     setAnimating(false);
+  }
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder.current = new MediaRecorder(stream);
+      audioChunks.current = [];
+
+      mediaRecorder.current.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunks.current.push(e.data);
+      };
+
+      mediaRecorder.current.onstop = () => {
+        const blob = new Blob(audioChunks.current, { type: 'audio/webm' });
+        const url = URL.createObjectURL(blob);
+        setAudioUrl(url);
+        stream.getTracks().forEach((t) => t.stop());
+      };
+
+      mediaRecorder.current.start();
+      setRecording(true);
+    } catch {
+      alert('No se pudo acceder al microfono');
+    }
+  }
+
+  function stopRecording() {
+    if (mediaRecorder.current && recording) {
+      mediaRecorder.current.stop();
+      setRecording(false);
+    }
+  }
+
+  function playRecording() {
+    if (audioRef.current) {
+      audioRef.current.play();
+    }
   }
 
   if (loading) {
@@ -85,10 +146,21 @@ export default function Review() {
         <div style={{ fontSize: 12, color: C.textMuted }}>
           Tarjeta {index + 1} / {cards.length}
         </div>
-        <div style={{ display: "flex", gap: 6 }}>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          {!deckId && (
+            <button onClick={() => setInterleave(!interleave)} style={{
+              background: interleave ? C.goldBg : C.surface,
+              border: interleave ? `1px solid ${C.gold}33` : `1px solid ${C.border}`,
+              borderRadius: 8, padding: "4px 10px", fontSize: 11,
+              fontWeight: 600, color: interleave ? C.gold : C.textMuted,
+              cursor: "pointer",
+            }}>
+              {interleave ? 'Mezclado' : 'Por mazo'}
+            </button>
+          )}
           {cards.map((_, i) => (
             <div key={i} style={{
-              width: 26, height: 3, borderRadius: 2,
+              width: 18, height: 3, borderRadius: 2,
               background: i === index ? C.gold : C.border,
             }} />
           ))}
@@ -96,7 +168,10 @@ export default function Review() {
       </div>
 
       <div
-        onClick={() => setFlipped(!flipped)}
+        role="button"
+        tabIndex={0}
+        onPointerUp={(e) => { e.stopPropagation(); setFlipped(f => !f); }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setFlipped(f => !f); } }}
         style={{
           background: C.surface,
           border: flipped ? `1px solid ${C.gold}55` : `1px solid ${C.border}`,
@@ -111,6 +186,9 @@ export default function Review() {
           cursor: "pointer",
           transition: "all 0.25s",
           userSelect: "none",
+          outline: "none",
+          WebkitTapHighlightColor: "transparent",
+          touchAction: "manipulation",
           ...(flipped ? { boxShadow: `0 0 0 1px ${C.gold}14, 0 8px 32px rgba(0,0,0,0.4)` } : {}),
         }}
       >
@@ -172,7 +250,7 @@ export default function Review() {
                 maxWidth: 280, lineHeight: 1.6, marginTop: 2,
               }}>"{card.example}"</div>
             )}
-            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap", justifyContent: "center" }}>
               <button onClick={(e) => { e.stopPropagation(); speak(card.word); }} style={{
                 display: "flex", alignItems: "center", gap: 6,
                 background: C.tealBg, color: C.teal,
@@ -185,15 +263,48 @@ export default function Review() {
                 </svg>
                 Audio
               </button>
-              <button style={{
-                display: "flex", alignItems: "center", gap: 6,
-                background: C.goldBg, color: C.gold,
-                border: `1px solid ${C.gold}33`, borderRadius: 8,
-                padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
-              }}>
-                + Mazo
-              </button>
+              {!recording ? (
+                <button onClick={(e) => { e.stopPropagation(); startRecording(); }} style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  background: C.redBg, color: C.red,
+                  border: `1px solid ${C.red}33`, borderRadius: 8,
+                  padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+                  </svg>
+                  Grabar
+                </button>
+              ) : (
+                <button onClick={(e) => { e.stopPropagation(); stopRecording(); }} style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  background: C.goldBg, color: C.gold,
+                  border: `1px solid ${C.gold}33`, borderRadius: 8,
+                  padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill={C.gold} stroke={C.gold} strokeWidth="1">
+                    <rect x="2" y="2" width="20" height="20" rx="2"/>
+                  </svg>
+                  Parar
+                </button>
+              )}
+              {audioUrl && !recording && (
+                <button onClick={(e) => { e.stopPropagation(); playRecording(); }} style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  background: C.greenBg, color: C.green,
+                  border: `1px solid ${C.green}33`, borderRadius: 8,
+                  padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  Mi voz
+                </button>
+              )}
             </div>
+            {audioUrl && <audio ref={audioRef} src={audioUrl} style={{ display: "none" }} />}
           </div>
         )}
       </div>

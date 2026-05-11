@@ -5,12 +5,22 @@ import { sendMessage } from '../lib/claude';
 import { renderMarkdown } from '../lib/markdown';
 import { C } from '../lib/tokens';
 
+const SCENARIOS = [
+  { label: 'Restaurante', prompt: 'Simulemos que estoy en un restaurante. Vos sos la mesera y yo el cliente. Empeza vos.' },
+  { label: 'Hotel', prompt: 'Simulemos que estoy haciendo check-in en un hotel. Vos sos la recepcionista y yo el huesped. Empeza vos.' },
+  { label: 'Entrevista', prompt: 'Simulemos una entrevista de trabajo en ingles. Vos sos la entrevistadora. Haceme preguntas tipicas.' },
+  { label: 'Gramatica', prompt: 'Dame una mini-leccion de gramatica. Elegi un tema util para nivel B1-B2 y explicalo con ejemplos y comparacion con espanol.' },
+  { label: 'Vocabulario', prompt: 'Dame 5 palabras nuevas de nivel B1-B2 con su definicion en ingles, traduccion al espanol, IPA, y un ejemplo de uso. Elegi un tema util.' },
+  { label: 'Corregir', prompt: 'Voy a escribir una frase en ingles. Corregila y explicame los errores.' },
+];
+
 export default function Chat() {
   const { userId } = useAuth();
   const [msgs, setMsgs] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [showScenarios, setShowScenarios] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -28,7 +38,7 @@ export default function Chat() {
           setMsgs([{
             id: 'welcome',
             role: 'assistant',
-            content: 'Hola! Soy Lex, tu tutora de ingles. En que te ayudo hoy?',
+            content: 'Hola! Soy Lex, tu tutora de ingles. En que te ayudo hoy?\n\nPodes:\n- **Preguntarme** sobre una palabra o frase\n- **Pedir una mini-leccion** de gramatica\n- **Practicar** con un role-play (restaurante, hotel, entrevista...)\n- **Escribir en ingles** y te corrijo\n\nUsa los botones de abajo para empezar rapido!',
             created_at: new Date().toISOString(),
           }]);
         }
@@ -46,7 +56,7 @@ export default function Chat() {
     setMsgs([{
       id: 'welcome',
       role: 'assistant',
-      content: 'Hola! Soy Lex, tu tutora de ingles. En que te ayudo hoy?',
+      content: 'Hola! Soy Lex, tu tutora de ingles. En que te ayudo hoy?\n\nPodes:\n- **Preguntarme** sobre una palabra o frase\n- **Pedir una mini-leccion** de gramatica\n- **Practicar** con un role-play (restaurante, hotel, entrevista...)\n- **Escribir en ingles** y te corrijo\n\nUsa los botones de abajo para empezar rapido!',
       created_at: new Date().toISOString(),
     }]);
     setClearing(false);
@@ -56,10 +66,19 @@ export default function Chat() {
     e?.preventDefault();
     const text = input.trim();
     if (!text || loading) return;
+    setInput('');
+    await sendChatMessage(text);
+  }
 
+  async function sendScenario(prompt) {
+    if (loading) return;
+    setShowScenarios(false);
+    await sendChatMessage(prompt);
+  }
+
+  async function sendChatMessage(text) {
     const userMsg = { role: 'user', content: text, user_id: userId, created_at: new Date().toISOString() };
     setMsgs((prev) => [...prev, { ...userMsg, id: Date.now().toString() }]);
-    setInput('');
     setLoading(true);
 
     try {
@@ -203,6 +222,45 @@ export default function Chat() {
           </div>
         )}
         <div ref={bottomRef} />
+      </div>
+
+      {/* Scenario buttons */}
+      <div style={{ paddingBottom: 8 }}>
+        <button
+          onClick={() => setShowScenarios(!showScenarios)}
+          style={{
+            background: "none", border: `1px solid ${C.border}`,
+            borderRadius: 8, padding: "5px 12px", fontSize: 11,
+            fontWeight: 600, color: C.textMuted, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 4,
+          }}
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+          </svg>
+          {showScenarios ? 'Ocultar opciones' : 'Actividades'}
+        </button>
+        {showScenarios && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+            {SCENARIOS.map((s) => (
+              <button
+                key={s.label}
+                onClick={() => sendScenario(s.prompt)}
+                disabled={loading}
+                style={{
+                  background: C.surface, border: `1px solid ${C.border}`,
+                  borderRadius: 16, padding: "6px 14px", fontSize: 12,
+                  fontWeight: 500, color: C.textPrimary,
+                  cursor: loading ? "default" : "pointer",
+                  opacity: loading ? 0.4 : 1,
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                }}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Input */}

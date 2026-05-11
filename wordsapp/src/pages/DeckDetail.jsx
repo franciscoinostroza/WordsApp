@@ -5,6 +5,7 @@ import { useFlashcards } from '../hooks/useFlashcards';
 import { C, Tag } from '../lib/tokens';
 
 const PARTS = ['noun', 'verb', 'adjective', 'adverb', 'phrase', 'other'];
+const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 const COLORS = ['#c8a96e', '#7eb8a4', '#9b8ec4', '#c0675a', '#6aab8e', '#5b8bd4', '#d4885c'];
 
 const inputStyle = {
@@ -34,6 +35,7 @@ export default function DeckDetail() {
   const [example, setExample] = useState('');
   const [ipa, setIpa] = useState('');
   const [pos, setPos] = useState('');
+  const [cefr, setCefr] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
   const [sub, setSub] = useState(false);
@@ -54,6 +56,7 @@ export default function DeckDetail() {
   const [editExample, setEditExample] = useState('');
   const [editIpa, setEditIpa] = useState('');
   const [editPos, setEditPos] = useState('');
+  const [editCefr, setEditCefr] = useState('');
   const [editImageFile, setEditImageFile] = useState(null);
   const [editImagePreview, setEditImagePreview] = useState('');
   const [editSub, setEditSub] = useState(false);
@@ -69,9 +72,10 @@ export default function DeckDetail() {
       example: example.trim() || null,
       ipa: ipa.trim() || null,
       part_of_speech: pos || null,
+      cefr_level: cefr || null,
     }, imageFile);
     setWord(''); setTranslation(''); setDefinition('');
-    setExample(''); setIpa(''); setPos('');
+    setExample(''); setIpa(''); setPos(''); setCefr('');
     setImageFile(null); setImagePreview('');
     setSub(false); setOpen(false);
   }
@@ -104,6 +108,7 @@ export default function DeckDetail() {
     setEditExample(card.example || '');
     setEditIpa(card.ipa || '');
     setEditPos(card.part_of_speech || '');
+    setEditCefr(card.cefr_level || '');
     setEditImageFile(null);
     setEditImagePreview(card.image_url || '');
     setEditSub(false);
@@ -120,6 +125,7 @@ export default function DeckDetail() {
       example: editExample.trim() || null,
       ipa: editIpa.trim() || null,
       part_of_speech: editPos || null,
+      cefr_level: editCefr || null,
     };
     if (editImagePreview === '' && !editImageFile && editCard.image_url) {
       updates.removeImage = true;
@@ -233,8 +239,9 @@ export default function DeckDetail() {
                      <div style={{ fontSize: 13, color: C.textMuted, marginTop: 2 }}>{c.translation}</div>
                    </div>
                  </div>
-                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  {c.part_of_speech && <Tag>{c.part_of_speech}</Tag>}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                   {c.part_of_speech && <Tag>{c.part_of_speech}</Tag>}
+                   {c.cefr_level && <Tag color={C.teal} bg={C.tealBg}>{c.cefr_level}</Tag>}
                   <button onClick={() => openEditCard(c)} style={{
                     background: "none", border: "none", cursor: "pointer",
                     padding: 4, color: C.textMuted, borderRadius: 4,
@@ -293,6 +300,16 @@ export default function DeckDetail() {
                   {PARTS.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <div style={labelStyle}>Nivel CEFR</div>
+                <select value={cefr} onChange={e => setCefr(e.target.value)} style={{ ...inputStyle, appearance: "auto" }}>
+                  <option value="">Seleccionar</option>
+                  {CEFR_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </div>
+              <div>{/* spacer */}</div>
             </div>
             <div>
               <div style={labelStyle}>Imagen</div>
@@ -362,6 +379,16 @@ export default function DeckDetail() {
                   {PARTS.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <div style={labelStyle}>Nivel CEFR</div>
+                <select value={editCefr} onChange={e => setEditCefr(e.target.value)} style={{ ...inputStyle, appearance: "auto" }}>
+                  <option value="">Seleccionar</option>
+                  {CEFR_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+              </div>
+              <div>{/* spacer */}</div>
             </div>
             <div>
               <div style={labelStyle}>Imagen</div>

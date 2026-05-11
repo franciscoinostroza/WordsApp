@@ -7,6 +7,8 @@ import { supabase } from '../lib/supabase';
 const navItems = [
   { label: "Inicio", to: "/", icon: HomeIcon },
   { label: "Repasar", to: "/review", icon: ReviewIcon },
+  { label: "Escribir", to: "/write", icon: WriteIcon },
+  { label: "Escuchar", to: "/listen", icon: ListenIcon },
   { label: "Lex", to: "/chat", icon: ChatIcon },
   { label: "Quiz", to: "/quiz", icon: QuizIcon },
   { label: "Progreso", to: "/progress", icon: ProgressIcon },
@@ -126,7 +128,12 @@ export default function Layout() {
                   }}>
                     <Icon color={isActive ? "#111318" : C.textMuted} size={16} />
                   </div>
-                  <span style={{ fontSize: 9, fontWeight: 500, marginTop: 2, color: isActive ? C.gold : C.textMuted }}>
+                  <span style={{
+                    fontSize: 9, fontWeight: 500, marginTop: 2,
+                    color: isActive ? C.gold : C.textMuted,
+                    overflow: "hidden", textOverflow: "ellipsis",
+                    whiteSpace: "nowrap", maxWidth: "100%",
+                  }}>
                     {label}
                   </span>
                 </div>
@@ -177,6 +184,22 @@ function ProgressIcon({ color, size = 18 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>
+  );
+}
+
+function WriteIcon({ color, size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+    </svg>
+  );
+}
+
+function ListenIcon({ color, size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 10v4M6 7v10M10 4v16M14 7v10M18 10v4"/>
     </svg>
   );
 }

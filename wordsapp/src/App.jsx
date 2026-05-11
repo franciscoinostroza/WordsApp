@@ -9,6 +9,10 @@ import DeckDetail from './pages/DeckDetail';
 import Review from './pages/Review';
 import Chat from './pages/Chat';
 import Quiz from './pages/Quiz';
+import Write from './pages/Write';
+import Listen from './pages/Listen';
+import Cloze from './pages/Cloze';
+import Scramble from './pages/Scramble';
 import Progress from './pages/Progress';
 
 function ProtectedRoute() {
@@ -46,6 +50,10 @@ export default function App() {
             <Route path="/review/:deckId" element={<Review />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/quiz" element={<Quiz />} />
+            <Route path="/write" element={<Write />} />
+            <Route path="/listen" element={<Listen />} />
+            <Route path="/cloze" element={<Cloze />} />
+            <Route path="/scramble" element={<Scramble />} />
             <Route path="/progress" element={<Progress />} />
           </Route>
         </Route>

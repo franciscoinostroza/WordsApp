@@ -1,7 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import { sm2 } from '../lib/sm2';
 import { C } from '../lib/tokens';
+import { updateStreak, updateProgressStats } from '../lib/activity';
 
 function shuffle(arr) {
   const a = [...arr];
@@ -14,7 +16,7 @@ function shuffle(arr) {
 
 function buildQuestions(cards) {
   if (cards.length < 2) return [];
-  const shuffled = shuffle(cards).slice(0, Math.min(5, cards.length));
+  const shuffled = shuffle(cards).slice(0, Math.min(8, cards.length));
   const allWords = cards.map((c) => c.word);
 
   return shuffled.map((card) => {
@@ -27,43 +29,93 @@ function buildQuestions(cards) {
 export default function Quiz() {
   const { userId } = useAuth();
   const [cards, setCards] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [qIndex, setQIndex] = useState(0);
   const [selected, setSelected] = useState(null);
   const [answered, setAnswered] = useState(false);
   const [score, setScore] = useState(0);
   const [loading, setLoading] = useState(true);
   const [gameKey, setGameKey] = useState(0);
+  const [wrongCardIds, setWrongCardIds] = useState([]);
 
   useEffect(() => {
     if (!userId) return;
-    supabase.from('flashcards').select('*').eq('user_id', userId).then(({ data }) => {
-      setCards(data || []);
+    async function load() {
+      const [cardsRes, reviewsRes] = await Promise.all([
+        supabase.from('flashcards').select('*').eq('user_id', userId),
+        supabase.from('reviews').select('*').eq('user_id', userId),
+      ]);
+      setCards(cardsRes.data || []);
+      setReviews(reviewsRes.data || []);
       setLoading(false);
-    });
+    }
+    load();
   }, [userId]);
 
   const questions = useMemo(() => {
     if (cards.length < 2) return [];
     return buildQuestions(cards);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cards, gameKey]);
+
+  const finishSession = useCallback(async () => {
+    await supabase.from('quiz_sessions').insert({
+      user_id: userId,
+      type: 'multiple_choice',
+      score,
+      total: questions.length,
+    });
+
+    const newStreak = await updateStreak(userId);
+    await updateProgressStats(userId, {
+      wordsStudied: questions.length,
+      quizScore: score / (questions.length || 1),
+      minutesStudied: Math.ceil(questions.length * 0.5),
+    });
+
+    if (wrongCardIds.length > 0) {
+      wrongCardIds.forEach((cardId) => {
+        const review = reviews.find((r) => r.flashcard_id === cardId);
+        if (review) {
+          const result = sm2(review, 0);
+          supabase.from('reviews').update({
+            due_date: result.due_date,
+            interval: result.interval,
+            ease_factor: result.ease_factor,
+            repetitions: result.repetitions,
+            last_quality: result.last_quality,
+            updated_at: new Date().toISOString(),
+          }).eq('id', review.id).then(() => {});
+        }
+      });
+    }
+
+    return newStreak;
+  }, [userId, score, questions, wrongCardIds, reviews]);
+
+  useEffect(() => {
+    if (qIndex >= questions.length && questions.length > 0) {
+      finishSession();
+    }
+  }, [qIndex, questions, finishSession]);
 
   function handleSelect(opt) {
     if (answered) return;
+    const isCorrect = opt === questions[qIndex]?.answer;
     setSelected(opt);
     setAnswered(true);
-    if (opt === questions[qIndex]?.answer) setScore((s) => s + 1);
+    if (isCorrect) {
+      setScore((s) => s + 1);
+    } else {
+      const wrongCard = questions[qIndex]?.card;
+      if (wrongCard) {
+        setWrongCardIds((prev) => [...prev, wrongCard.id]);
+      }
+    }
   }
 
   function nextQuestion() {
     if (qIndex + 1 >= questions.length) {
       setQIndex(qIndex + 1);
-      supabase.from('quiz_sessions').insert({
-        user_id: userId,
-        type: 'multiple_choice',
-        score: score + (selected === questions[qIndex]?.answer ? 1 : 0),
-        total: questions.length,
-      }).then(() => {});
     } else {
       setQIndex((prev) => prev + 1);
       setSelected(null);
@@ -77,6 +129,7 @@ export default function Quiz() {
     setSelected(null);
     setAnswered(false);
     setScore(0);
+    setWrongCardIds([]);
   }
 
   if (loading) {
@@ -102,8 +155,13 @@ export default function Quiz() {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, paddingTop: 40 }}>
         <div style={{ fontSize: 48, fontWeight: 800, color: C.gold }}>{finalScore}/{questions.length}</div>
         <div style={{ fontSize: 15, fontWeight: 700, color: C.textPrimary }}>
-          {finalScore === questions.length ? 'Perfecto!' : finalScore >= 3 ? 'Buen trabajo!' : 'Segui practicando'}
+          {finalScore === questions.length ? 'Perfecto!' : finalScore >= Math.ceil(questions.length * 0.7) ? 'Buen trabajo!' : 'Segui practicando'}
         </div>
+        {wrongCardIds.length > 0 && (
+          <div style={{ fontSize: 12, color: C.textMuted }}>
+            {wrongCardIds.length} palabra{wrongCardIds.length > 1 ? 's' : ''} marcada{wrongCardIds.length > 1 ? 's' : ''} para repasar pronto
+          </div>
+        )}
         <button onClick={restart} style={{
           background: C.gold, color: "#111318", border: "none",
           borderRadius: 10, padding: "10px 24px", fontSize: 14,
