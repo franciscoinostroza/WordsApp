@@ -47,6 +47,33 @@ export function useFlashcards(deckId) {
 
   useEffect(() => { fetchFlashcards() }, [fetchFlashcards]) // eslint-disable-line react-hooks/set-state-in-effect
 
+  const addMissingImages = useCallback(async () => {
+    if (!userId || !deckId) return
+    const cardsWithoutImage = flashcards.filter(c => !c.image_url)
+    if (cardsWithoutImage.length === 0) return
+
+    const updates = cardsWithoutImage.map(c => ({
+      id: c.id,
+      image_url: `https://picsum.photos/seed/${encodeURIComponent(c.word.replace(/\s+/g, '-'))}/400/300`,
+    }))
+
+    for (const u of updates) {
+      const { error } = await supabase
+        .from('flashcards')
+        .update({ image_url: u.image_url })
+        .eq('id', u.id)
+      if (!error) {
+        setFlashcards(prev => prev.map(f => f.id === u.id ? { ...f, image_url: u.image_url } : f))
+      }
+    }
+  }, [userId, deckId, flashcards])
+
+  useEffect(() => {
+    if (!loading && flashcards.length > 0) {
+      addMissingImages()
+    }
+  }, [loading, addMissingImages]) // eslint-disable-line
+
   const createFlashcard = async (card, imageFile) => {
     let image_url = null
     if (imageFile) {
