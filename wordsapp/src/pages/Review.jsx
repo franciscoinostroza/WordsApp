@@ -18,6 +18,8 @@ export default function Review() {
   const [recording, setRecording] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
   const [interleave, setInterleave] = useState(false);
+  const [pronouncing, setPronouncing] = useState(false);
+  const [pronResult, setPronResult] = useState(null);
   const reviewedCount = useRef(0);
   const mediaRecorder = useRef(null);
   const audioChunks = useRef([]);
@@ -83,6 +85,41 @@ export default function Review() {
     if (audioRef.current) {
       audioRef.current.play();
     }
+  }
+
+  function startPronunciation() {
+    setPronResult(null);
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setPronResult({ text: '', correct: false, message: 'Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.' });
+      return;
+    }
+    setPronouncing(true);
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript.trim();
+      const confidence = event.results[0][0].confidence;
+      const clean = transcript.toLowerCase().replace(/[.,!?]/g, '');
+      const expected = card.word.toLowerCase().trim();
+      const isCorrect = clean === expected;
+      setPronResult({
+        text: transcript,
+        confidence: Math.round(confidence * 100),
+        correct: isCorrect,
+        message: isCorrect
+          ? '¡Pronunciacion perfecta!'
+          : `Esperado: "${card.word}"`,
+      });
+      setPronouncing(false);
+    };
+    recognition.onerror = () => {
+      setPronResult({ text: '', correct: false, message: 'No se entendio. Intenta de nuevo.' });
+      setPronouncing(false);
+    };
+    recognition.start();
   }
 
   if (loading) {
@@ -309,7 +346,46 @@ export default function Review() {
                   Mi voz
                 </button>
               )}
+              <button onClick={(e) => { e.stopPropagation(); startPronunciation(); }} disabled={pronouncing} style={{
+                display: "flex", alignItems: "center", gap: 6,
+                background: C.purpleBg, color: C.purple,
+                border: `1px solid ${C.purple}33`, borderRadius: 8,
+                padding: "6px 12px", fontSize: 12, fontWeight: 600,
+                cursor: pronouncing ? "default" : "pointer",
+                opacity: pronouncing ? 0.5 : 1,
+              }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                  <path d="M23 9l-6 6M17 9l6 6"/>
+                </svg>
+                {pronouncing ? 'Escuchando...' : 'Pronunciar'}
+              </button>
             </div>
+            {pronResult && (
+              <div style={{
+                marginTop: 10, padding: '10px 14px', borderRadius: 10,
+                background: pronResult.correct ? C.greenBg : C.goldBg,
+                border: `1px solid ${pronResult.correct ? C.green + '33' : C.goldBorder}`,
+                fontSize: 13, lineHeight: 1.6, textAlign: 'center',
+              }}>
+                {pronResult.text && (
+                  <div style={{ color: C.textPrimary, fontWeight: 600 }}>
+                    Dijiste: <span style={{ color: pronResult.correct ? C.green : C.red }}>"{pronResult.text}"</span>
+                    {pronResult.confidence > 0 && (
+                      <span style={{ fontSize: 11, color: C.textMuted, marginLeft: 8 }}>
+                        {pronResult.confidence}% confianza
+                      </span>
+                    )}
+                  </div>
+                )}
+                <div style={{
+                  color: pronResult.correct ? C.green : C.gold,
+                  fontWeight: 600, marginTop: pronResult.text ? 4 : 0,
+                }}>
+                  {pronResult.message}
+                </div>
+              </div>
+            )}
             {audioUrl && <audio ref={audioRef} src={audioUrl} style={{ display: "none" }} />}
           </div>
         )}
