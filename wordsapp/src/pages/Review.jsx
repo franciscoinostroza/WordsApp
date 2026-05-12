@@ -9,7 +9,7 @@ import { useAuth } from '../hooks/useAuth';
 export default function Review() {
   const { deckId } = useParams();
   const { userId } = useAuth();
-  const { cards, loading, rateCard } = useReviews(deckId || null);
+  const { cards, loading, rateCard } = useReviews(deckId || null, refreshKey);
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [done, setDone] = useState(false);
@@ -17,6 +17,7 @@ export default function Review() {
   const [recording, setRecording] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
   const [interleave, setInterleave] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const reviewedCount = useRef(0);
   const mediaRecorder = useRef(null);
   const audioChunks = useRef([]);
@@ -121,7 +122,12 @@ export default function Review() {
             {cards.length === 0 ? 'No hay tarjetas pendientes.' : 'Buen trabajo, segui practicando.'}
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+          <button onClick={() => { setDone(false); setRefreshKey(k => k + 1); }} style={{
+            background: C.tealBg, color: C.teal,
+            border: `1px solid ${C.teal}33`, borderRadius: 8,
+            padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+          }}>Repasar todas</button>
           <Link to="/decks" style={{
             background: C.surface, color: C.textPrimary,
             border: `1px solid ${C.border}`, borderRadius: 8,

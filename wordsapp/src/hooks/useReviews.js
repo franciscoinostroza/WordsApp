@@ -3,10 +3,11 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
 import { sm2 } from '../lib/sm2'
 
-export function useReviews(deckId = null) {
+export function useReviews(deckId = null, refreshKey = 0) {
   const { userId } = useAuth()
   const [cards, setCards] = useState([])
   const [loading, setLoading] = useState(true)
+  const forceAll = refreshKey > 0
 
   const fetchDueCards = useCallback(async () => {
     if (!userId) return
@@ -16,8 +17,12 @@ export function useReviews(deckId = null) {
       .from('reviews')
       .select('*, flashcards(*)')
       .eq('user_id', userId)
-      .lte('due_date', new Date().toISOString().split('T')[0])
-      .order('due_date', { ascending: true })
+
+    if (!forceAll) {
+      query = query.lte('due_date', new Date().toISOString().split('T')[0])
+    }
+
+    query = query.order('due_date', { ascending: true })
 
     if (deckId) {
       const { data: deckCards } = await supabase
@@ -38,7 +43,7 @@ export function useReviews(deckId = null) {
     const { data } = await query
     setCards(data || [])
     setLoading(false)
-  }, [userId, deckId])
+  }, [userId, deckId, forceAll])
 
   useEffect(() => { fetchDueCards() }, [fetchDueCards]) // eslint-disable-line react-hooks/set-state-in-effect
 
