@@ -172,6 +172,63 @@ export default function Chat() {
     setTimeout(() => inputRef.current?.focus(), 100);
   }
 
+  async function sendStoryRequest() {
+    if (loading) return;
+    setShowScenarios(false);
+    setFlashcardData(null);
+    setLastFlashMsgId(null);
+    setLoading(true);
+
+    try {
+      const { data: cards } = await supabase
+        .from('flashcards')
+        .select('word, translation')
+        .eq('user_id', userId)
+        .limit(40);
+
+      const shuffled = [...(cards || [])].sort(() => Math.random() - 0.5).slice(0, 20);
+      if (shuffled.length < 4) {
+        setMsgs(prev => [...prev, {
+          id: Date.now().toString() + '-err',
+          role: 'assistant',
+          content: 'Necesitas al menos 4 flashcards para crear una historia. Agrega mas tarjetas primero.',
+          user_id: userId,
+          created_at: new Date().toISOString(),
+        }]);
+        setLoading(false);
+        return;
+      }
+
+      const wordList = shuffled.map(c => `${c.word} (${c.translation})`).join(', ');
+      const prompt = `Crea una HISTORIA CON MI VOCABULARIO usando estas palabras: ${wordList}`;
+
+      const userMsg = { role: 'user', content: prompt, user_id: userId, created_at: new Date().toISOString() };
+      setMsgs((prev) => [...prev, { ...userMsg, id: Date.now().toString() }]);
+      await supabase.from('chat_messages').insert(userMsg);
+
+      const reply = await sendMessage([{ role: 'user', text: prompt }]);
+
+      const aiMsg = {
+        role: 'assistant',
+        content: reply,
+        user_id: userId,
+        created_at: new Date().toISOString(),
+      };
+      await supabase.from('chat_messages').insert(aiMsg);
+      setMsgs((prev) => [...prev, { ...aiMsg, id: Date.now().toString() + '-ai' }]);
+    } catch (err) {
+      setMsgs((prev) => [...prev, {
+        id: Date.now().toString() + '-err',
+        role: 'assistant',
+        content: `Error: ${err.message}`,
+        user_id: userId,
+        created_at: new Date().toISOString(),
+      }]);
+    }
+
+    setLoading(false);
+  }
+
   async function importFlashcards() {
     if (importing || !flashcardData) return;
 
@@ -530,6 +587,20 @@ export default function Chat() {
               }}
             >
               + Flashcard
+            </button>
+            <button
+              onClick={sendStoryRequest}
+              disabled={loading}
+              style={{
+                background: C.tealBg, border: `1px solid ${C.teal}33`,
+                borderRadius: 16, padding: "6px 14px", fontSize: 12,
+                fontWeight: 600, color: C.teal,
+                cursor: loading ? "default" : "pointer",
+                opacity: loading ? 0.4 : 1,
+                fontFamily: "'Inter', system-ui, sans-serif",
+              }}
+            >
+              Historia
             </button>
             {SCENARIOS.map((s) => (
               <button
