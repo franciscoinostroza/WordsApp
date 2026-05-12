@@ -4,7 +4,7 @@ import { useDeck } from '../hooks/useDecks';
 import { useFlashcards } from '../hooks/useFlashcards';
 import { C, Tag } from '../lib/tokens';
 
-const PARTS = ['noun', 'verb', 'adjective', 'adverb', 'phrase', 'other'];
+const PARTS = ['noun', 'verb', 'adjective', 'adverb', 'phrasal verb', 'phrase', 'other'];
 const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 const COLORS = ['#c8a96e', '#7eb8a4', '#9b8ec4', '#c0675a', '#6aab8e', '#5b8bd4', '#d4885c'];
 
