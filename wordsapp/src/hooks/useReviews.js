@@ -8,9 +8,42 @@ export function useReviews(deckId = null, refreshKey = 0) {
   const [cards, setCards] = useState([])
   const [loading, setLoading] = useState(true)
 
+  const ensureReviews = useCallback(async () => {
+    if (!userId) return
+    const { data: flashcards } = await supabase
+      .from('flashcards')
+      .select('id')
+      .eq('user_id', userId)
+
+    const { data: existingReviews } = await supabase
+      .from('reviews')
+      .select('flashcard_id')
+      .eq('user_id', userId)
+
+    const existingIds = new Set(existingReviews?.map(r => r.flashcard_id) || [])
+    const missingCards = (flashcards || []).filter(c => !existingIds.has(c.id))
+
+    if (missingCards.length > 0) {
+      const today = new Date().toISOString().split('T')[0]
+      const reviews = missingCards.map(c => ({
+        flashcard_id: c.id,
+        user_id: userId,
+        due_date: today,
+        interval: 0,
+        ease_factor: 2.5,
+        repetitions: 0,
+      }))
+      await supabase.from('reviews').insert(reviews)
+    }
+  }, [userId])
+
   const fetchDueCards = useCallback(async () => {
     if (!userId) return
     setLoading(true)
+
+    if (refreshKey > 0) {
+      await ensureReviews()
+    }
 
     let query = supabase
       .from('reviews')
@@ -43,7 +76,7 @@ export function useReviews(deckId = null, refreshKey = 0) {
     if (error) console.error('useReviews fetch error:', error)
     setCards(data || [])
     setLoading(false)
-  }, [userId, deckId, refreshKey])
+  }, [userId, deckId, refreshKey, ensureReviews])
 
   useEffect(() => { fetchDueCards() }, [fetchDueCards]) // eslint-disable-line react-hooks/set-state-in-effect
 
