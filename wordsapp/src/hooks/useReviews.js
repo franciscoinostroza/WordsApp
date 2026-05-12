@@ -12,7 +12,7 @@ export function useReviews(deckId = null, refreshKey = 0) {
     if (!userId) return
     const { data: flashcards } = await supabase
       .from('flashcards')
-      .select('id')
+      .select('id, word, image_url')
       .eq('user_id', userId)
 
     const { data: existingReviews } = await supabase
@@ -34,6 +34,15 @@ export function useReviews(deckId = null, refreshKey = 0) {
         repetitions: 0,
       }))
       await supabase.from('reviews').insert(reviews)
+    }
+
+    const cardsWithoutImage = (flashcards || []).filter(c => !c.image_url)
+    if (cardsWithoutImage.length > 0) {
+      for (const c of cardsWithoutImage) {
+        await supabase.from('flashcards').update({
+          image_url: `https://picsum.photos/seed/${encodeURIComponent(c.word.replace(/\s+/g, '-'))}/400/300`
+        }).eq('id', c.id)
+      }
     }
   }, [userId])
 
