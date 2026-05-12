@@ -43,7 +43,7 @@ export default function Cloze() {
 
   const sessionCards = useMemo(() => {
     if (cards.length < 2) return [];
-    return shuffle(cards).slice(0, Math.min(8, cards.length));
+    return shuffle(cards).slice(0, Math.min(15, cards.length));
   }, [cards, sessionKey]);
 
   const current = sessionCards[index];

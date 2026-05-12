@@ -43,7 +43,7 @@ export default function Scramble() {
 
   const sessionCards = useMemo(() => {
     if (cards.length < 2) return [];
-    return shuffle(cards).slice(0, Math.min(6, cards.length));
+    return shuffle(cards).slice(0, Math.min(10, cards.length));
   }, [cards, sessionKey]);
 
   const current = sessionCards[index];

@@ -48,7 +48,7 @@ export default function Write() {
     const dueFlashcardIds = new Set(dueReviews.map((r) => r.flashcard_id));
     const dueCards = cards.filter((c) => dueFlashcardIds.has(c.id));
     const otherCards = cards.filter((c) => !dueFlashcardIds.has(c.id));
-    const selected = shuffle(dueCards.length >= 5 ? dueCards : [...dueCards, ...otherCards]).slice(0, Math.min(8, cards.length));
+    const selected = shuffle(dueCards.length >= 5 ? dueCards : [...dueCards, ...otherCards]).slice(0, Math.min(15, cards.length));
     return selected;
   }, [cards, dueReviews, sessionKey]);
 

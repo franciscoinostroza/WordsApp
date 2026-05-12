@@ -16,7 +16,7 @@ function shuffle(arr) {
 
 function buildQuestions(cards) {
   if (cards.length < 2) return [];
-  const shuffled = shuffle(cards).slice(0, Math.min(8, cards.length));
+  const shuffled = shuffle(cards).slice(0, Math.min(15, cards.length));
   const allWords = cards.map((c) => c.word);
 
   return shuffled.map((card) => {
