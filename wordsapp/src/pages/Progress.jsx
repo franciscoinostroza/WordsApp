@@ -39,7 +39,7 @@ export default function Progress() {
         supabase.from('quiz_sessions').select('score,total,completed_at').eq('user_id', userId).order('completed_at', { ascending: false }).limit(10),
         supabase.from('reviews').select('due_date,interval,repetitions,ease_factor').eq('user_id', userId).gte('due_date', mondayStr).lte('due_date', todayStr),
         supabase.from('reviews').select('due_date').eq('user_id', userId).lte('due_date', todayStr),
-        supabase.from('reviews').select('*, flashcards(word)').eq('user_id', userId).lt('ease_factor', 2.0).order('ease_factor', { ascending: true }).limit(3),
+        supabase.from('reviews').select('*, flashcards(word, translation)').eq('user_id', userId).lt('ease_factor', 2.0).order('ease_factor', { ascending: true }),
         supabase.from('quiz_sessions').select('id').eq('user_id', userId).gte('completed_at', mondayStr),
       ]);
 
@@ -76,6 +76,7 @@ export default function Progress() {
       });
       setDifficult((difficultRes.data || []).map((r) => ({
         word: r.flashcards?.word || '?',
+        translation: r.flashcards?.translation || '',
         id: r.id,
         ef: r.ease_factor,
       })));
@@ -189,23 +190,33 @@ export default function Progress() {
         {difficult.length === 0 ? (
           <p style={{ fontSize: 13, color: C.textMuted, padding: "8px 0" }}>No hay palabras dificiles detectadas</p>
         ) : (
-          difficult.map((w) => (
-            <div key={w.id} style={{
-              display: "flex", justifyContent: "space-between",
-              alignItems: "center", padding: "9px 0",
-              borderBottom: `1px solid ${C.border}`,
-            }}>
-              <span style={{ fontSize: 13, color: C.textPrimary }}>{w.word}</span>
-              <div style={{ display: "flex", gap: 4 }}>
-                {[0, 1, 2].map((j) => (
-                  <div key={j} style={{
-                    width: 7, height: 7, borderRadius: "50%",
-                    background: j < Math.ceil((2.5 - w.ef) / 0.4) ? C.red : C.border,
-                  }} />
-                ))}
+          <>
+            {difficult.map((w) => (
+              <div key={w.id} style={{
+                display: "flex", justifyContent: "space-between",
+                alignItems: "center", padding: "9px 0",
+                borderBottom: `1px solid ${C.border}`,
+              }}>
+                <div>
+                  <span style={{ fontSize: 13, color: C.textPrimary, fontWeight: 600 }}>{w.word}</span>
+                  {w.translation && (
+                    <span style={{ fontSize: 11, color: C.textMuted, marginLeft: 8 }}>{w.translation}</span>
+                  )}
+                </div>
+                <div style={{ display: "flex", gap: 4 }}>
+                  {[0, 1, 2].map((j) => (
+                    <div key={j} style={{
+                      width: 7, height: 7, borderRadius: "50%",
+                      background: j < Math.ceil((2.5 - w.ef) / 0.4) ? C.red : C.border,
+                    }} />
+                  ))}
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+            <p style={{ fontSize: 11, color: C.textMuted, marginTop: 10, textAlign: 'center' }}>
+              Usa el boton "Repasar todas" para practicar estas palabras
+            </p>
+          </>
         )}
       </div>
 

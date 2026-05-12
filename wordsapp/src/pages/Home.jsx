@@ -41,7 +41,7 @@ function getLastWordOfDayWord() {
 
 export default function Home() {
   const { userId, user } = useAuth();
-  const [stats, setStats] = useState({ dueCards: 0, totalCards: 0, totalDecks: 0, streak: 0 });
+  const [stats, setStats] = useState({ dueCards: 0, totalCards: 0, totalDecks: 0, streak: 0, problemCount: 0 });
   const [decks, setDecks] = useState([]);
   const [deckCardCounts, setDeckCardCounts] = useState({});
   const [wordOfDay, setWordOfDay] = useState(null);
@@ -56,13 +56,14 @@ export default function Home() {
       const wodDate = getLastWordOfDay();
       const wodWord = getLastWordOfDayWord();
 
-      const [r, c, d, u, dl, fc, wd, progressRes] = await Promise.all([
+      const [r, c, d, u, dl, fc, pr, wd, progressRes] = await Promise.all([
         supabase.from('reviews').select('id', { count: 'exact' }).eq('user_id', userId).lte('due_date', today),
         supabase.from('flashcards').select('id', { count: 'exact' }).eq('user_id', userId),
         supabase.from('decks').select('id', { count: 'exact' }).eq('user_id', userId),
         supabase.from('users').select('streak_days').eq('id', userId).single(),
         supabase.from('decks').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(5),
         supabase.from('flashcards').select('id, deck_id').eq('user_id', userId),
+        supabase.from('reviews').select('id', { count: 'exact' }).eq('user_id', userId).lt('ease_factor', 2.0),
         wodDate !== today || !wodWord
           ? supabase.from('flashcards').select('*').eq('user_id', userId).not('word', 'eq', wodWord).limit(20)
           : supabase.from('flashcards').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(1),
@@ -75,7 +76,7 @@ export default function Home() {
       });
       setDeckCardCounts(counts);
 
-      setStats({ dueCards: r.count || 0, totalCards: c.count || 0, totalDecks: d.count || 0, streak: u.data?.streak_days || 0 });
+      setStats({ dueCards: r.count || 0, totalCards: c.count || 0, totalDecks: d.count || 0, streak: u.data?.streak_days || 0, problemCount: pr.count || 0 });
       setDecks(dl.data || []);
 
       let selectedWord = null;
@@ -274,6 +275,26 @@ export default function Home() {
           icon={
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="1.5">
               <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+          }
+        />
+        <QuickCard
+          label="Dictado" sub="Escuchar y escribir"
+          to="/dictate" color={C.teal} bg={C.tealBg} borderColor={C.tealBorder}
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.teal} strokeWidth="1.5">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+          }
+        />
+        <QuickCard
+          label="Dificiles" sub={loading ? '...' : stats.problemCount > 0 ? `${stats.problemCount} por mejorar` : 'Todo bien'}
+          to="/progress" color={C.red} bg={C.redBg} borderColor={`${C.red}33`}
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth="1.5">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
           }
         />

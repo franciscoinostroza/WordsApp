@@ -38,6 +38,28 @@ export default function Quiz() {
   const [loading, setLoading] = useState(true);
   const [gameKey, setGameKey] = useState(0);
   const [wrongCardIds, setWrongCardIds] = useState([]);
+  const [timeLeft, setTimeLeft] = useState(10);
+  const [speedBonus, setSpeedBonus] = useState(0);
+
+  useEffect(() => {
+    if (loading || questions.length === 0 || qIndex >= questions.length) return;
+    const timer = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [qIndex, loading, questions]);
+
+  useEffect(() => {
+    if (timeLeft === 0 && !answered && questions.length > 0 && qIndex < questions.length) {
+      handleSelect(null);
+    }
+  }, [timeLeft]); // eslint-disable-line
 
   useEffect(() => {
     if (!userId) return;
@@ -101,12 +123,15 @@ export default function Quiz() {
 
   function handleSelect(opt) {
     if (answered) return;
-    const isCorrect = opt === questions[qIndex]?.answer;
+    const isCorrect = opt !== null && opt === questions[qIndex]?.answer;
     playSound(isCorrect);
     setSelected(opt);
     setAnswered(true);
     if (isCorrect) {
       setScore((s) => s + 1);
+      if (timeLeft >= 7) {
+        setSpeedBonus((s) => s + 1);
+      }
     } else {
       const wrongCard = questions[qIndex]?.card;
       if (wrongCard) {
@@ -122,6 +147,7 @@ export default function Quiz() {
       setQIndex((prev) => prev + 1);
       setSelected(null);
       setAnswered(false);
+      setTimeLeft(10);
     }
   }
 
@@ -131,6 +157,8 @@ export default function Quiz() {
     setSelected(null);
     setAnswered(false);
     setScore(0);
+    setSpeedBonus(0);
+    setTimeLeft(10);
     setWrongCardIds([]);
   }
 
@@ -164,6 +192,11 @@ export default function Quiz() {
             {wrongCardIds.length} palabra{wrongCardIds.length > 1 ? 's' : ''} marcada{wrongCardIds.length > 1 ? 's' : ''} para repasar pronto
           </div>
         )}
+        {speedBonus > 0 && (
+          <div style={{ fontSize: 13, color: C.teal, fontWeight: 600 }}>
+            +{speedBonus} bonus de velocidad ⚡
+          </div>
+        )}
         <button onClick={restart} style={{
           background: C.gold, color: "#111318", border: "none",
           borderRadius: 10, padding: "10px 24px", fontSize: 14,
@@ -183,11 +216,18 @@ export default function Quiz() {
         <div style={{ fontSize: 12, color: C.textMuted }}>
           Pregunta {qIndex + 1} de {questions.length}
         </div>
-        <span style={{
-          background: C.purpleBg, color: C.purple,
-          border: `1px solid ${C.purple}33`,
-          borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 600,
-        }}>Multiple choice</span>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <span style={{
+            fontSize: 14, fontWeight: 700,
+            color: timeLeft <= 2 ? C.red : timeLeft <= 5 ? C.gold : C.teal,
+            fontFamily: "'SF Mono', 'Fira Code', monospace",
+          }}>⏱ {timeLeft}s</span>
+          <span style={{
+            background: C.purpleBg, color: C.purple,
+            border: `1px solid ${C.purple}33`,
+            borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 600,
+          }}>Quiz</span>
+        </div>
       </div>
 
       <div style={{

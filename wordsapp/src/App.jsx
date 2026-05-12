@@ -13,6 +13,7 @@ import Write from './pages/Write';
 import Listen from './pages/Listen';
 import Cloze from './pages/Cloze';
 import Scramble from './pages/Scramble';
+import Dictado from './pages/Dictado';
 import Progress from './pages/Progress';
 
 function ProtectedRoute() {
@@ -54,6 +55,7 @@ export default function App() {
             <Route path="/listen" element={<Listen />} />
             <Route path="/cloze" element={<Cloze />} />
             <Route path="/scramble" element={<Scramble />} />
+            <Route path="/dictate" element={<Dictado />} />
             <Route path="/progress" element={<Progress />} />
           </Route>
         </Route>

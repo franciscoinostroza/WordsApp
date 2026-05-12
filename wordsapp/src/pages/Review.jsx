@@ -189,24 +189,51 @@ export default function Review() {
         <div style={{ fontSize: 12, color: C.textMuted }}>
           Tarjeta {index + 1} / {cards.length}
         </div>
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 6, alignItems: "center", overflowX: "auto", maxWidth: "100%" }}>
           {!deckId && (
             <button onClick={() => setInterleave(!interleave)} style={{
               background: interleave ? C.goldBg : C.surface,
               border: interleave ? `1px solid ${C.gold}33` : `1px solid ${C.border}`,
               borderRadius: 8, padding: "4px 10px", fontSize: 11,
               fontWeight: 600, color: interleave ? C.gold : C.textMuted,
-              cursor: "pointer",
+              cursor: "pointer", flexShrink: 0,
             }}>
               {interleave ? 'Mezclado' : 'Por mazo'}
             </button>
           )}
-          {cards.map((_, i) => (
-            <div key={i} style={{
-              width: 18, height: 3, borderRadius: 2,
-              background: i === index ? C.gold : C.border,
-            }} />
-          ))}
+          {cards.map((c, i) => {
+            const isCurrent = i === index;
+            const isDone = i < index;
+            const word = c.flashcards?.word || '';
+            return (
+              <div key={c.id || i} style={{
+                width: isCurrent ? 38 : 28, height: isCurrent ? 38 : 28,
+                borderRadius: 8, flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: isCurrent ? 12 : 10, fontWeight: 600,
+                background: isCurrent ? C.goldBg : isDone ? C.greenBg : C.surface,
+                border: `1px solid ${isCurrent ? C.gold : isDone ? `${C.green}33` : C.border}`,
+                color: isCurrent ? C.gold : isDone ? C.green : C.textMuted,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                padding: '2px',
+                cursor: isDone ? 'default' : 'pointer',
+              }}
+              title={word}
+              onClick={() => {
+                if (!isDone) {
+                  setFlipped(false);
+                  setAudioUrl(null);
+                  setPronResult(null);
+                  setIndex(i);
+                }
+              }}
+            >
+              {isDone ? '✓' : word.slice(0, 3).toUpperCase()}
+            </div>
+            );
+          })}
         </div>
       </div>
 
