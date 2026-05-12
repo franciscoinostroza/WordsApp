@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import { useDecks } from '../hooks/useDecks';
 import { sendMessage } from '../lib/claude';
 import { renderMarkdown } from '../lib/markdown';
 import { C } from '../lib/tokens';
@@ -14,13 +15,47 @@ const SCENARIOS = [
   { label: 'Corregir', prompt: 'Voy a escribir una frase en ingles. Corregila y explicame los errores.' },
 ];
 
+function extractFlashcards(text) {
+  const match = text.match(/<flashcards>([\s\S]*?)<\/flashcards>/);
+  if (!match) return { cleanedText: text, cards: null };
+  const raw = match[1].trim();
+  let cleanedText = text.replace(/<flashcards>[\s\S]*?<\/flashcards>/, '').trim();
+  try {
+    const cards = JSON.parse(raw);
+    return { cleanedText, cards: Array.isArray(cards) ? cards : null };
+  } catch {
+    const cleaned = raw
+      .replace(/```json\s*|```\s*/g, '')
+      .replace(/,\s*}/g, '}')
+      .replace(/,\s*]/g, ']')
+      .replace(/,\s*,/g, ',');
+    try {
+      const cards = JSON.parse(cleaned);
+      return { cleanedText, cards: Array.isArray(cards) ? cards : null };
+    } catch {
+      return { cleanedText, cards: null };
+    }
+  }
+}
+
+function getFlashcardImage(word) {
+  return `https://picsum.photos/seed/${encodeURIComponent(word.replace(/\s+/g, '-'))}/400/300`;
+}
+
 export default function Chat() {
   const { userId } = useAuth();
+  const { decks, createDeck } = useDecks();
   const [msgs, setMsgs] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [showScenarios, setShowScenarios] = useState(false);
+  const [flashcardData, setFlashcardData] = useState(null);
+  const [selectedDeckId, setSelectedDeckId] = useState('');
+  const [newDeckName, setNewDeckName] = useState('');
+  const [useExistingDeck, setUseExistingDeck] = useState(true);
+  const [importing, setImporting] = useState(false);
+  const [lastFlashMsgId, setLastFlashMsgId] = useState(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -34,13 +69,22 @@ export default function Chat() {
       .then(({ data }) => {
         if (data && data.length > 0) {
           setMsgs(data);
+          const lastMsg = data[data.length - 1];
+          if (lastMsg.role === 'assistant') {
+            const { cards } = extractFlashcards(lastMsg.content);
+            if (cards) {
+              setFlashcardData(cards);
+              setLastFlashMsgId(lastMsg.id);
+            }
+          }
         } else {
-          setMsgs([{
+          const welcomeMsg = {
             id: 'welcome',
             role: 'assistant',
-            content: 'Hola! Soy Lex, tu tutora de ingles. En que te ayudo hoy?\n\nPodes:\n- **Preguntarme** sobre una palabra o frase\n- **Pedir una mini-leccion** de gramatica\n- **Practicar** con un role-play (restaurante, hotel, entrevista...)\n- **Escribir en ingles** y te corrijo\n\nUsa los botones de abajo para empezar rapido!',
+            content: 'Hola! Soy Lex, tu tutora de ingles. En que te ayudo hoy?\n\nPodes:\n- **Preguntarme** sobre una palabra o frase\n- **Pedir una mini-leccion** de gramatica\n- **Practicar** con un role-play (restaurante, hotel, entrevista...)\n- **Pedir que cree flashcards** sobre un tema\n- **Escribir en ingles** y te corrijo\n\nUsa los botones de abajo para empezar rapido!',
             created_at: new Date().toISOString(),
-          }]);
+          };
+          setMsgs([welcomeMsg]);
         }
       });
   }, [userId]);
@@ -53,10 +97,12 @@ export default function Chat() {
     if (clearing) return;
     setClearing(true);
     await supabase.from('chat_messages').delete().eq('user_id', userId);
+    setFlashcardData(null);
+    setLastFlashMsgId(null);
     setMsgs([{
       id: 'welcome',
       role: 'assistant',
-      content: 'Hola! Soy Lex, tu tutora de ingles. En que te ayudo hoy?\n\nPodes:\n- **Preguntarme** sobre una palabra o frase\n- **Pedir una mini-leccion** de gramatica\n- **Practicar** con un role-play (restaurante, hotel, entrevista...)\n- **Escribir en ingles** y te corrijo\n\nUsa los botones de abajo para empezar rapido!',
+      content: 'Hola! Soy Lex, tu tutora de ingles. En que te ayudo hoy?\n\nPodes:\n- **Preguntarme** sobre una palabra o frase\n- **Pedir una mini-leccion** de gramatica\n- **Practicar** con un role-play (restaurante, hotel, entrevista...)\n- **Pedir que cree flashcards** sobre un tema\n- **Escribir en ingles** y te corrijo\n\nUsa los botones de abajo para empezar rapido!',
       created_at: new Date().toISOString(),
     }]);
     setClearing(false);
@@ -67,12 +113,16 @@ export default function Chat() {
     const text = input.trim();
     if (!text || loading) return;
     setInput('');
+    setFlashcardData(null);
+    setLastFlashMsgId(null);
     await sendChatMessage(text);
   }
 
   async function sendScenario(prompt) {
     if (loading) return;
     setShowScenarios(false);
+    setFlashcardData(null);
+    setLastFlashMsgId(null);
     await sendChatMessage(prompt);
   }
 
@@ -100,7 +150,14 @@ export default function Chat() {
       };
 
       await supabase.from('chat_messages').insert(aiMsg);
-      setMsgs((prev) => [...prev, { ...aiMsg, id: Date.now().toString() + '-ai' }]);
+      const aiMsgId = Date.now().toString() + '-ai';
+      setMsgs((prev) => [...prev, { ...aiMsg, id: aiMsgId }]);
+
+      const { cards } = extractFlashcards(reply);
+      if (cards) {
+        setFlashcardData(cards);
+        setLastFlashMsgId(aiMsgId);
+      }
     } catch (err) {
       const errMsg = {
         role: 'assistant',
@@ -113,6 +170,210 @@ export default function Chat() {
 
     setLoading(false);
     setTimeout(() => inputRef.current?.focus(), 100);
+  }
+
+  async function importFlashcards() {
+    if (importing || !flashcardData) return;
+
+    let deckId = selectedDeckId;
+    let deckNameForMsg = '';
+
+    if (!useExistingDeck) {
+      const name = newDeckName.trim();
+      if (!name) return;
+      const deck = await createDeck(name, 'Mazo creado desde Lex', '#6366f1');
+      deckId = deck.id;
+      deckNameForMsg = name;
+    } else {
+      if (!deckId) return;
+      const deck = decks.find(d => d.id === deckId);
+      deckNameForMsg = deck?.name || 'mazo';
+    }
+
+    setImporting(true);
+
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const cards = flashcardData.map(c => ({
+        word: c.word,
+        translation: c.translation,
+        definition: c.definition || '',
+        example: c.example || '',
+        ipa: c.ipa || '',
+        part_of_speech: c.part_of_speech || '',
+        image_url: getFlashcardImage(c.word),
+        deck_id: deckId,
+        user_id: userId,
+      }));
+
+      const { data: inserted, error: fcError } = await supabase
+        .from('flashcards')
+        .insert(cards)
+        .select('id');
+
+      if (fcError) throw fcError;
+
+      const reviews = (inserted || []).map(c => ({
+        flashcard_id: c.id,
+        user_id: userId,
+        due_date: today,
+        interval: 0,
+        ease_factor: 2.5,
+        repetitions: 0,
+      }));
+
+      await supabase.from('reviews').insert(reviews);
+
+      const confirmContent = `${cards.length} flashcards agregadas a "${deckNameForMsg}"`;
+      const confirmMsg = {
+        role: 'assistant',
+        content: confirmContent,
+        user_id: userId,
+        created_at: new Date().toISOString(),
+      };
+      await supabase.from('chat_messages').insert(confirmMsg);
+      setMsgs(prev => [...prev, { ...confirmMsg, id: Date.now().toString() + '-confirm' }]);
+
+      setFlashcardData(null);
+      setLastFlashMsgId(null);
+      setSelectedDeckId('');
+      setNewDeckName('');
+      setUseExistingDeck(true);
+    } catch (err) {
+      const errMsg = {
+        role: 'assistant',
+        content: `Error al importar: ${err.message}`,
+        user_id: userId,
+        created_at: new Date().toISOString(),
+      };
+      setMsgs(prev => [...prev, { ...errMsg, id: Date.now().toString() + '-err' }]);
+    }
+
+    setImporting(false);
+  }
+
+  function renderFlashcardPreview(cards) {
+    return (
+      <div style={{ marginTop: 12, marginBottom: 8 }}>
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+          gap: 8, marginBottom: 12,
+        }}>
+          {cards.map((c, i) => (
+            <div key={i} style={{
+              background: C.bg, borderRadius: 10, overflow: 'hidden',
+              border: `1px solid ${C.border}`,
+            }}>
+              <img
+                src={getFlashcardImage(c.word)}
+                alt=""
+                style={{ width: '100%', height: 80, objectFit: 'cover' }}
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
+              <div style={{ padding: '8px 10px' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.textPrimary }}>
+                  {c.word}
+                </div>
+                <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>
+                  {c.translation}
+                </div>
+                {c.ipa && (
+                  <div style={{
+                    fontFamily: "'SF Mono', 'Fira Code', monospace",
+                    fontSize: 10, color: C.textMuted, marginTop: 3,
+                  }}>{c.ipa}</div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Deck selector */}
+        <div style={{
+          background: C.surface, border: `1px solid ${C.border}`,
+          borderRadius: 12, padding: 12,
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: C.textMuted, marginBottom: 10 }}>
+            Agregar {cards.length} flashcards a:
+          </div>
+
+          <label style={{
+            display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8,
+            cursor: 'pointer', fontSize: 13, color: C.textPrimary,
+          }}>
+            <input
+              type="radio"
+              checked={useExistingDeck}
+              onChange={() => setUseExistingDeck(true)}
+              style={{ accentColor: C.gold }}
+            />
+            Mazo existente
+          </label>
+
+          {useExistingDeck && (
+            <select
+              value={selectedDeckId}
+              onChange={e => setSelectedDeckId(e.target.value)}
+              style={{
+                width: '100%', background: C.bg, color: C.textPrimary,
+                border: `1px solid ${C.border}`, borderRadius: 8,
+                padding: '8px 12px', fontSize: 13, marginBottom: 10,
+                fontFamily: "'Inter', system-ui, sans-serif",
+              }}
+            >
+              <option value="">-- Elegi un mazo --</option>
+              {decks.map(d => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+          )}
+
+          <label style={{
+            display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8,
+            cursor: 'pointer', fontSize: 13, color: C.textPrimary,
+          }}>
+            <input
+              type="radio"
+              checked={!useExistingDeck}
+              onChange={() => setUseExistingDeck(false)}
+              style={{ accentColor: C.gold }}
+            />
+            Crear mazo nuevo
+          </label>
+
+          {!useExistingDeck && (
+            <input
+              type="text"
+              value={newDeckName}
+              onChange={e => setNewDeckName(e.target.value)}
+              placeholder="Nombre del nuevo mazo"
+              style={{
+                width: '100%', background: C.bg, color: C.textPrimary,
+                border: `1px solid ${C.border}`, borderRadius: 8,
+                padding: '8px 12px', fontSize: 13, marginBottom: 10,
+                fontFamily: "'Inter', system-ui, sans-serif", outline: 'none',
+              }}
+            />
+          )}
+
+          <button
+            onClick={importFlashcards}
+            disabled={importing || (useExistingDeck && !selectedDeckId) || (!useExistingDeck && !newDeckName.trim())}
+            style={{
+              width: '100%', background: importing || (useExistingDeck && !selectedDeckId) || (!useExistingDeck && !newDeckName.trim())
+                ? C.border : C.gold,
+              color: importing || (useExistingDeck && !selectedDeckId) || (!useExistingDeck && !newDeckName.trim())
+                ? C.textMuted : '#111318',
+              border: 'none', borderRadius: 10, padding: '10px 16px',
+              fontSize: 13, fontWeight: 700, cursor: importing ? 'default' : 'pointer',
+              fontFamily: "'Inter', system-ui, sans-serif",
+            }}
+          >
+            {importing ? 'Agregando...' : `Agregar ${cards.length} flashcards`}
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -161,6 +422,11 @@ export default function Chat() {
       }}>
         {msgs.map((m) => {
           const isUser = m.role === 'user';
+          const isConfirm = m.content && m.content.includes('flashcards agregadas');
+          const { cleanedText } = m.id === lastFlashMsgId && flashcardData
+            ? extractFlashcards(m.content)
+            : { cleanedText: m.content };
+
           return (
             <div key={m.id} style={{
               display: "flex",
@@ -169,31 +435,40 @@ export default function Chat() {
             }}>
               {!isUser && (
                 <div style={{
-                  width: 26, height: 26, background: C.gold,
+                  width: 26, height: 26, background: isConfirm ? C.green : C.gold,
                   borderRadius: "50%", display: "flex",
                   alignItems: "center", justifyContent: "center",
                   color: "#111318", fontSize: 11, fontWeight: 800,
                   flexShrink: 0,
-                }}>L</div>
+                }}>{isConfirm ? '✓' : 'L'}</div>
               )}
-              <div style={{
-                maxWidth: "78%",
-                background: isUser ? C.gold : C.surface,
-                color: isUser ? "#111318" : C.textPrimary,
-                border: isUser ? "none" : `1px solid ${C.border}`,
-                borderRadius: isUser ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                padding: "10px 14px",
-                fontSize: 13,
-                lineHeight: 1.55,
-                fontWeight: isUser ? 500 : 400,
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-              }}>
-                {isUser ? m.content : <span dangerouslySetInnerHTML={{ __html: renderMarkdown(m.content) }} />}
+              <div style={{ maxWidth: "78%", flexShrink: 1 }}>
+                <div style={{
+                  background: isUser ? C.gold : isConfirm ? C.greenBg : C.surface,
+                  color: isUser ? "#111318" : C.textPrimary,
+                  border: isUser ? "none" : isConfirm ? `1px solid ${C.green}33` : `1px solid ${C.border}`,
+                  borderRadius: isUser ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                  padding: "10px 14px",
+                  fontSize: 13,
+                  lineHeight: 1.55,
+                  fontWeight: isUser ? 500 : 400,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                }}>
+                  {isUser || isConfirm ? m.content : <span dangerouslySetInnerHTML={{ __html: renderMarkdown(cleanedText) }} />}
+                </div>
               </div>
             </div>
           );
         })}
+        {flashcardData && !importing && (
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 7 }}>
+            <div style={{ width: 26, flexShrink: 0 }} />
+            <div style={{ maxWidth: "78%", flexShrink: 1 }}>
+              {renderFlashcardPreview(flashcardData)}
+            </div>
+          </div>
+        )}
         {loading && (
           <div style={{ display: "flex", alignItems: "flex-end", gap: 7 }}>
             <div style={{
@@ -242,6 +517,20 @@ export default function Chat() {
         </button>
         {showScenarios && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+            <button
+              onClick={() => sendScenario('Crea 8 flashcards sobre un tema util para nivel B1-B2.')}
+              disabled={loading}
+              style={{
+                background: C.goldBg, border: `1px solid ${C.gold}33`,
+                borderRadius: 16, padding: "6px 14px", fontSize: 12,
+                fontWeight: 600, color: C.gold,
+                cursor: loading ? "default" : "pointer",
+                opacity: loading ? 0.4 : 1,
+                fontFamily: "'Inter', system-ui, sans-serif",
+              }}
+            >
+              + Flashcard
+            </button>
             {SCENARIOS.map((s) => (
               <button
                 key={s.label}

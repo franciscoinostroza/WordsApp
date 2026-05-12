@@ -39,6 +39,18 @@ Cuando el usuario pide CORRECCION de una frase:
 - Explica cada error de forma breve
 - Da la regla gramatical relevante
 
+Cuando el usuario pide CREAR FLASHCARDS:
+- Pregunta primero el tema, nivel y cuantas tarjetas quiere.
+- Genera el JSON EXACTO dentro de tags <flashcards>...</flashcards> SIN bloques de markdown.
+- Cada objeto debe tener: word, translation, definition, example, ipa, part_of_speech.
+- El JSON debe ser valido: sin comas al final, sin saltos de linea dentro de strings, escapar comillas dobles con \\".
+- No uses bloques de codigo markdown (\`\`\`json). Solo los tags <flashcards> y </flashcards>.
+- Ejemplo EXACTO de formato:
+<flashcards>[{"word":"browser","translation":"navegador","definition":"A program used to access the internet","example":"I use a browser to search for information.","ipa":"/ˈbraʊzər/","part_of_speech":"noun"},{"word":"upload","translation":"subir","definition":"To transfer data from a local device to a remote system","example":"I need to upload the photos to the cloud.","ipa":"/ˈʌploʊd/","part_of_speech":"verb"}]</flashcards>
+- Inclui la explicacion breve ANTES de los tags, no dentro.
+- NO uses acentos ni caracteres especiales que rompan el JSON.
+- Si el usuario no especifica cantidad, genera 8 flashcards por defecto.
+
 Al final de cada respuesta (salvo en role-play activo), ofrece al usuario la opcion de agregar la palabra/concepto a sus flashcards.`;
 
 export async function sendMessage(messages) {
@@ -63,7 +75,7 @@ export async function sendMessage(messages) {
     body: JSON.stringify({
       model: MODEL,
       messages: formattedMessages,
-      max_tokens: 1024,
+      max_tokens: 4096,
       temperature: 0.7,
     }),
   });
