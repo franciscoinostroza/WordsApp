@@ -204,17 +204,23 @@ export default function DeckDetail() {
       </div>
 
       <div style={{ display: "flex", gap: 8 }}>
-        <button onClick={() => setOpen(true)} style={{
+        <Link to={`/review/${id}`} style={{
           background: C.gold, color: "#111318", borderRadius: 8,
           padding: "8px 16px", fontSize: 13, fontWeight: 700,
-          cursor: "pointer", border: "none",
-        }}>+ Agregar</button>
-        <Link to={`/review/${id}`} style={{
+          cursor: "pointer", textDecoration: "none", border: "none",
+          display: "flex", alignItems: "center", gap: 6,
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+          Repasar mazo
+        </Link>
+        <button onClick={() => setOpen(true)} style={{
           background: C.surface, color: C.textPrimary,
           border: `1px solid ${C.border}`, borderRadius: 8,
           padding: "8px 16px", fontSize: 13, fontWeight: 600,
-          cursor: "pointer", textDecoration: "none",
-        }}>Repasar</Link>
+          cursor: "pointer",
+        }}>+ Agregar</button>
       </div>
 
       <div style={{ fontSize: 11, fontWeight: 700, color: C.textMuted, textTransform: "uppercase", letterSpacing: 0.5 }}>

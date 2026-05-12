@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { sm2 } from '../lib/sm2';
 import { C } from '../lib/tokens';
+import { playSound } from '../lib/sounds';
 import { updateStreak, updateProgressStats } from '../lib/activity';
 
 function shuffle(arr) {
@@ -101,6 +102,7 @@ export default function Quiz() {
   function handleSelect(opt) {
     if (answered) return;
     const isCorrect = opt === questions[qIndex]?.answer;
+    playSound(isCorrect);
     setSelected(opt);
     setAnswered(true);
     if (isCorrect) {

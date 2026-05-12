@@ -43,6 +43,7 @@ export default function Home() {
   const { userId, user } = useAuth();
   const [stats, setStats] = useState({ dueCards: 0, totalCards: 0, totalDecks: 0, streak: 0 });
   const [decks, setDecks] = useState([]);
+  const [deckCardCounts, setDeckCardCounts] = useState({});
   const [wordOfDay, setWordOfDay] = useState(null);
   const [loading, setLoading] = useState(true);
   const [todayProgress, setTodayProgress] = useState({ wordsStudied: 0, wordsLearned: 0 });
@@ -55,17 +56,24 @@ export default function Home() {
       const wodDate = getLastWordOfDay();
       const wodWord = getLastWordOfDayWord();
 
-      const [r, c, d, u, dl, wd, progressRes] = await Promise.all([
+      const [r, c, d, u, dl, fc, wd, progressRes] = await Promise.all([
         supabase.from('reviews').select('id', { count: 'exact' }).eq('user_id', userId).lte('due_date', today),
         supabase.from('flashcards').select('id', { count: 'exact' }).eq('user_id', userId),
         supabase.from('decks').select('id', { count: 'exact' }).eq('user_id', userId),
         supabase.from('users').select('streak_days').eq('id', userId).single(),
         supabase.from('decks').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(5),
+        supabase.from('flashcards').select('id, deck_id').eq('user_id', userId),
         wodDate !== today || !wodWord
           ? supabase.from('flashcards').select('*').eq('user_id', userId).not('word', 'eq', wodWord).limit(20)
           : supabase.from('flashcards').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(1),
         supabase.from('progress_stats').select('*').eq('user_id', userId).eq('date', today).single(),
       ]);
+
+      const counts = {};
+      (fc.data || []).forEach(card => {
+        counts[card.deck_id] = (counts[card.deck_id] || 0) + 1;
+      });
+      setDeckCardCounts(counts);
 
       setStats({ dueCards: r.count || 0, totalCards: c.count || 0, totalDecks: d.count || 0, streak: u.data?.streak_days || 0 });
       setDecks(dl.data || []);
@@ -224,7 +232,7 @@ export default function Home() {
           }
         />
         <QuickCard
-          label="Mazos" sub={loading ? '...' : `${stats.totalDecks} mazos`}
+          label="Mazos" sub={loading ? '...' : `${stats.totalDecks} mazos · ${stats.totalCards} tarjetas`}
           to="/decks" color={C.teal} bg={C.tealBg} borderColor={C.tealBorder}
           icon={
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.teal} strokeWidth="1.5">
@@ -348,7 +356,7 @@ export default function Home() {
                   border: `1px solid ${C.border}`, borderRadius: 20,
                   padding: "2px 10px",
                 }}>
-                  {d.card_count ?? '-'}
+                  {deckCardCounts[d.id] ?? '-'}
                 </span>
               </Link>
             ))}

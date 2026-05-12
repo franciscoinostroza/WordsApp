@@ -5,6 +5,7 @@ import { sm2 } from '../lib/sm2';
 import { C, Tag } from '../lib/tokens';
 import { speak } from '../lib/speech';
 import { updateStreak, updateProgressStats } from '../lib/activity';
+import { playSound } from '../lib/sounds';
 
 function shuffle(arr) {
   const a = [...arr];
@@ -67,6 +68,7 @@ export default function Write() {
   function handleSubmit() {
     if (submitted || !current) return;
     const correct = normalize(input) === normalize(trimmedAnswer);
+    playSound(correct);
     setIsCorrect(correct);
     setSubmitted(true);
     if (correct) setScore((s) => s + 1);
