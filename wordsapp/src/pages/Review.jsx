@@ -293,103 +293,108 @@ export default function Review() {
                 maxWidth: 280, lineHeight: 1.6, marginTop: 2,
               }}>"{card.example}"</div>
             )}
-            <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap", justifyContent: "center" }}>
-              <button onClick={(e) => { e.stopPropagation(); speak(card.word); }} style={{
-                display: "flex", alignItems: "center", gap: 6,
-                background: C.tealBg, color: C.teal,
-                border: `1px solid ${C.teal}33`, borderRadius: 8,
-                padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
-              }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                  <path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/>
-                </svg>
-                Audio
-              </button>
-              {!recording ? (
-                <button onClick={(e) => { e.stopPropagation(); startRecording(); }} style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  background: C.redBg, color: C.red,
-                  border: `1px solid ${C.red}33`, borderRadius: 8,
-                  padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
-                }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                    <line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
-                  </svg>
-                  Grabar
-                </button>
-              ) : (
-                <button onClick={(e) => { e.stopPropagation(); stopRecording(); }} style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  background: C.goldBg, color: C.gold,
-                  border: `1px solid ${C.gold}33`, borderRadius: 8,
-                  padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
-                }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill={C.gold} stroke={C.gold} strokeWidth="1">
-                    <rect x="2" y="2" width="20" height="20" rx="2"/>
-                  </svg>
-                  Parar
-                </button>
-              )}
-              {audioUrl && !recording && (
-                <button onClick={(e) => { e.stopPropagation(); playRecording(); }} style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  background: C.greenBg, color: C.green,
-                  border: `1px solid ${C.green}33`, borderRadius: 8,
-                  padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
-                }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polygon points="5 3 19 12 5 21 5 3"/>
-                  </svg>
-                  Mi voz
-                </button>
-              )}
-              <button onClick={(e) => { e.stopPropagation(); startPronunciation(); }} disabled={pronouncing} style={{
-                display: "flex", alignItems: "center", gap: 6,
-                background: C.purpleBg, color: C.purple,
-                border: `1px solid ${C.purple}33`, borderRadius: 8,
-                padding: "6px 12px", fontSize: 12, fontWeight: 600,
-                cursor: pronouncing ? "default" : "pointer",
-                opacity: pronouncing ? 0.5 : 1,
-              }}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M11 5L6 9H2v6h4l5 4V5z"/>
-                  <path d="M23 9l-6 6M17 9l6 6"/>
-                </svg>
-                {pronouncing ? 'Escuchando...' : 'Pronunciar'}
-              </button>
-            </div>
-            {pronResult && (
-              <div style={{
-                marginTop: 10, padding: '10px 14px', borderRadius: 10,
-                background: pronResult.correct ? C.greenBg : C.goldBg,
-                border: `1px solid ${pronResult.correct ? C.green + '33' : C.goldBorder}`,
-                fontSize: 13, lineHeight: 1.6, textAlign: 'center',
-              }}>
-                {pronResult.text && (
-                  <div style={{ color: C.textPrimary, fontWeight: 600 }}>
-                    Dijiste: <span style={{ color: pronResult.correct ? C.green : C.red }}>"{pronResult.text}"</span>
-                    {pronResult.confidence > 0 && (
-                      <span style={{ fontSize: 11, color: C.textMuted, marginLeft: 8 }}>
-                        {pronResult.confidence}% confianza
-                      </span>
-                    )}
-                  </div>
-                )}
-                <div style={{
-                  color: pronResult.correct ? C.green : C.gold,
-                  fontWeight: 600, marginTop: pronResult.text ? 4 : 0,
-                }}>
-                  {pronResult.message}
-                </div>
-              </div>
-            )}
-            {audioUrl && <audio ref={audioRef} src={audioUrl} style={{ display: "none" }} />}
           </div>
         )}
       </div>
+
+      {flipped && (
+        <div style={{ animation: "fadeIn 0.2s ease-out" }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center" }}>
+            <button onClick={(e) => { e.stopPropagation(); speak(card.word); }} style={{
+              display: "flex", alignItems: "center", gap: 6,
+              background: C.tealBg, color: C.teal,
+              border: `1px solid ${C.teal}33`, borderRadius: 8,
+              padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
+            }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/>
+              </svg>
+              Audio
+            </button>
+            {!recording ? (
+              <button onClick={(e) => { e.stopPropagation(); startRecording(); }} style={{
+                display: "flex", alignItems: "center", gap: 6,
+                background: C.redBg, color: C.red,
+                border: `1px solid ${C.red}33`, borderRadius: 8,
+                padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
+              }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  <line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+                </svg>
+                Grabar
+              </button>
+            ) : (
+              <button onClick={(e) => { e.stopPropagation(); stopRecording(); }} style={{
+                display: "flex", alignItems: "center", gap: 6,
+                background: C.goldBg, color: C.gold,
+                border: `1px solid ${C.gold}33`, borderRadius: 8,
+                padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
+              }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill={C.gold} stroke={C.gold} strokeWidth="1">
+                  <rect x="2" y="2" width="20" height="20" rx="2"/>
+                </svg>
+                Parar
+              </button>
+            )}
+            {audioUrl && !recording && (
+              <button onClick={(e) => { e.stopPropagation(); playRecording(); }} style={{
+                display: "flex", alignItems: "center", gap: 6,
+                background: C.greenBg, color: C.green,
+                border: `1px solid ${C.green}33`, borderRadius: 8,
+                padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer",
+              }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                Mi voz
+              </button>
+            )}
+            <button onClick={(e) => { e.stopPropagation(); startPronunciation(); }} disabled={pronouncing} style={{
+              display: "flex", alignItems: "center", gap: 6,
+              background: C.purpleBg, color: C.purple,
+              border: `1px solid ${C.purple}33`, borderRadius: 8,
+              padding: "6px 12px", fontSize: 12, fontWeight: 600,
+              cursor: pronouncing ? "default" : "pointer",
+              opacity: pronouncing ? 0.5 : 1,
+            }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+                <path d="M23 9l-6 6M17 9l6 6"/>
+              </svg>
+              {pronouncing ? 'Escuchando...' : 'Pronunciar'}
+            </button>
+          </div>
+          {pronResult && (
+            <div style={{
+              marginTop: 10, padding: '10px 14px', borderRadius: 10,
+              background: pronResult.correct ? C.greenBg : C.goldBg,
+              border: `1px solid ${pronResult.correct ? C.green + '33' : C.goldBorder}`,
+              fontSize: 13, lineHeight: 1.6, textAlign: 'center',
+            }}>
+              {pronResult.text && (
+                <div style={{ color: C.textPrimary, fontWeight: 600 }}>
+                  Dijiste: <span style={{ color: pronResult.correct ? C.green : C.red }}>"{pronResult.text}"</span>
+                  {pronResult.confidence > 0 && (
+                    <span style={{ fontSize: 11, color: C.textMuted, marginLeft: 8 }}>
+                      {pronResult.confidence}% confianza
+                    </span>
+                  )}
+                </div>
+              )}
+              <div style={{
+                color: pronResult.correct ? C.green : C.gold,
+                fontWeight: 600, marginTop: pronResult.text ? 4 : 0,
+              }}>
+                {pronResult.message}
+              </div>
+            </div>
+          )}
+          {audioUrl && <audio ref={audioRef} src={audioUrl} style={{ display: "none" }} />}
+        </div>
+      )}
 
       {flipped && (
         <div style={{ animation: "slideUp 0.2s ease-out" }}>
