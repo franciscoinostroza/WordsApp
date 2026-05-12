@@ -56,6 +56,15 @@ export default function Chat() {
   const [useExistingDeck, setUseExistingDeck] = useState(true);
   const [importing, setImporting] = useState(false);
   const [lastFlashMsgId, setLastFlashMsgId] = useState(null);
+
+  const [showStoryPicker, setShowStoryPicker] = useState(false);
+  const [storyDeckIds, setStoryDeckIds] = useState([]);
+
+  const [showFlashcardPicker, setShowFlashcardPicker] = useState(false);
+  const [flashcardTopic, setFlashcardTopic] = useState('');
+  const [flashcardCount, setFlashcardCount] = useState(8);
+  const [flashcardLevel, setFlashcardLevel] = useState('B1');
+
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -121,6 +130,8 @@ export default function Chat() {
   async function sendScenario(prompt) {
     if (loading) return;
     setShowScenarios(false);
+    setShowFlashcardPicker(false);
+    setShowStoryPicker(false);
     setFlashcardData(null);
     setLastFlashMsgId(null);
     await sendChatMessage(prompt);
@@ -172,19 +183,40 @@ export default function Chat() {
     setTimeout(() => inputRef.current?.focus(), 100);
   }
 
-  async function sendStoryRequest() {
+  async function openStoryPicker() {
+    setShowStoryPicker(!showStoryPicker);
+    setShowFlashcardPicker(false);
+    setStoryDeckIds([]);
+  }
+
+  function openFlashcardPicker() {
+    setShowFlashcardPicker(!showFlashcardPicker);
+    setShowStoryPicker(false);
+    setFlashcardTopic('');
+    setFlashcardCount(8);
+    setFlashcardLevel('B1');
+  }
+
+  async function sendStoryRequest(deckIds = []) {
     if (loading) return;
     setShowScenarios(false);
+    setShowStoryPicker(false);
     setFlashcardData(null);
     setLastFlashMsgId(null);
     setLoading(true);
 
     try {
-      const { data: cards } = await supabase
+      let query = supabase
         .from('flashcards')
-        .select('word, translation')
+        .select('word, translation, deck_id')
         .eq('user_id', userId)
-        .limit(40);
+        .limit(60);
+
+      if (deckIds.length > 0) {
+        query = query.in('deck_id', deckIds);
+      }
+
+      const { data: cards } = await query;
 
       const shuffled = [...(cards || [])].sort(() => Math.random() - 0.5).slice(0, 20);
       if (shuffled.length < 4) {
@@ -559,7 +591,7 @@ export default function Chat() {
       {/* Scenario buttons */}
       <div style={{ paddingBottom: 8 }}>
         <button
-          onClick={() => setShowScenarios(!showScenarios)}
+          onClick={() => { setShowScenarios(!showScenarios); setShowFlashcardPicker(false); setShowStoryPicker(false); }}
           style={{
             background: "none", border: `1px solid ${C.border}`,
             borderRadius: 8, padding: "5px 12px", fontSize: 11,
@@ -575,7 +607,7 @@ export default function Chat() {
         {showScenarios && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
             <button
-              onClick={() => sendScenario('Crea 8 flashcards sobre un tema util para nivel B1-B2.')}
+              onClick={openFlashcardPicker}
               disabled={loading}
               style={{
                 background: C.goldBg, border: `1px solid ${C.gold}33`,
@@ -589,7 +621,7 @@ export default function Chat() {
               + Flashcard
             </button>
             <button
-              onClick={sendStoryRequest}
+              onClick={openStoryPicker}
               disabled={loading}
               style={{
                 background: C.tealBg, border: `1px solid ${C.teal}33`,
@@ -619,6 +651,144 @@ export default function Chat() {
                 {s.label}
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Flashcard picker */}
+        {showFlashcardPicker && (
+          <div style={{
+            background: C.surface, border: `1px solid ${C.gold}33`,
+            borderRadius: 14, padding: 14, marginTop: 10,
+          }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: C.gold, marginBottom: 10 }}>
+              Crear flashcards con Lex
+            </div>
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 4 }}>Tema</div>
+              <input
+                type="text"
+                value={flashcardTopic}
+                onChange={e => setFlashcardTopic(e.target.value)}
+                placeholder="ej: tecnologia, comida, viajes..."
+                autoFocus
+                style={{
+                  width: '100%', background: C.bg, color: C.textPrimary,
+                  border: `1px solid ${C.border}`, borderRadius: 8,
+                  padding: '8px 12px', fontSize: 13, outline: 'none',
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                }}
+              />
+            </div>
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 4 }}>Cantidad: {flashcardCount}</div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {[4, 8, 12, 16, 20].map(n => (
+                  <button
+                    key={n}
+                    onClick={() => setFlashcardCount(n)}
+                    style={{
+                      flex: 1, padding: '6px 0', borderRadius: 8, fontSize: 12,
+                      fontWeight: 600, border: `1px solid ${flashcardCount === n ? C.gold : C.border}`,
+                      background: flashcardCount === n ? C.goldBg : C.bg,
+                      color: flashcardCount === n ? C.gold : C.textMuted,
+                      cursor: 'pointer', fontFamily: "'Inter', system-ui, sans-serif",
+                    }}
+                  >{n}</button>
+                ))}
+              </div>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 4 }}>Nivel</div>
+              <select
+                value={flashcardLevel}
+                onChange={e => setFlashcardLevel(e.target.value)}
+                style={{
+                  width: '100%', background: C.bg, color: C.textPrimary,
+                  border: `1px solid ${C.border}`, borderRadius: 8,
+                  padding: '8px 12px', fontSize: 13,
+                  fontFamily: "'Inter', system-ui, sans-serif",
+                }}
+              >
+                {['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].map(l => (
+                  <option key={l} value={l}>{l}</option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={() => {
+                setShowFlashcardPicker(false);
+                sendScenario(`Crea ${flashcardCount} flashcards${flashcardTopic ? ' sobre ' + flashcardTopic : ' sobre un tema util'} para nivel ${flashcardLevel}.`);
+              }}
+              disabled={loading}
+              style={{
+                width: '100%', background: loading ? C.border : C.gold,
+                color: loading ? C.textMuted : '#111318',
+                border: 'none', borderRadius: 10, padding: '10px 16px',
+                fontSize: 13, fontWeight: 700, cursor: loading ? 'default' : 'pointer',
+                fontFamily: "'Inter', system-ui, sans-serif",
+              }}
+            >
+              Crear {flashcardCount} flashcards
+            </button>
+          </div>
+        )}
+
+        {/* Story picker */}
+        {showStoryPicker && (
+          <div style={{
+            background: C.surface, border: `1px solid ${C.teal}33`,
+            borderRadius: 14, padding: 14, marginTop: 10,
+          }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: C.teal, marginBottom: 10 }}>
+              ¿De qué mazos querés la historia?
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+              {decks.map(d => {
+                const count = d.card_count ?? 0;
+                const checked = storyDeckIds.includes(d.id);
+                return (
+                  <label key={d.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '8px 12px', borderRadius: 10,
+                    background: checked ? `${C.teal}10` : C.bg,
+                    border: `1px solid ${checked ? C.teal + '33' : C.border}`,
+                    cursor: 'pointer', fontSize: 13, color: C.textPrimary,
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => {
+                        setStoryDeckIds(prev =>
+                          prev.includes(d.id) ? prev.filter(id => id !== d.id) : [...prev, d.id]
+                        );
+                      }}
+                      style={{ accentColor: C.teal }}
+                    />
+                    <span style={{
+                      width: 8, height: 8, borderRadius: 2,
+                      background: d.color || C.teal, flexShrink: 0,
+                    }} />
+                    <span style={{ flex: 1 }}>{d.name}</span>
+                    <span style={{ fontSize: 11, color: C.textMuted }}>{count} tarjetas</span>
+                  </label>
+                );
+              })}
+            </div>
+            <button
+              onClick={() => sendStoryRequest(storyDeckIds)}
+              disabled={loading || storyDeckIds.length === 0}
+              style={{
+                width: '100%', background: (loading || storyDeckIds.length === 0) ? C.border : C.teal,
+                color: (loading || storyDeckIds.length === 0) ? C.textMuted : '#111318',
+                border: 'none', borderRadius: 10, padding: '10px 16px',
+                fontSize: 13, fontWeight: 700, cursor: (loading || storyDeckIds.length === 0) ? 'default' : 'pointer',
+                fontFamily: "'Inter', system-ui, sans-serif",
+              }}
+            >
+              {storyDeckIds.length === 0
+                ? 'Elegí al menos un mazo'
+                : `Generar historia con ${storyDeckIds.length} mazo(s)`}
+            </button>
           </div>
         )}
       </div>
