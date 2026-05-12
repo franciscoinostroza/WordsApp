@@ -9,6 +9,7 @@ import { useAuth } from '../hooks/useAuth';
 export default function Review() {
   const { deckId } = useParams();
   const { userId } = useAuth();
+  const [refreshKey, setRefreshKey] = useState(0);
   const { cards, loading, rateCard } = useReviews(deckId || null, refreshKey);
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -17,7 +18,6 @@ export default function Review() {
   const [recording, setRecording] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
   const [interleave, setInterleave] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
   const reviewedCount = useRef(0);
   const mediaRecorder = useRef(null);
   const audioChunks = useRef([]);
