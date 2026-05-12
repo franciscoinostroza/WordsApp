@@ -1,6 +1,6 @@
 const API_KEY = import.meta.env.VITE_AI_API_KEY;
 const API_URL = '/api/chat';
-const MODEL = 'qwen3.6-plus';
+const MODEL = 'glm-5.1';
 
 const SYSTEM_PROMPT = `Eres Lex, una tutora de ingles para estudiantes hispanohablantes de nivel B1-B2.
 
